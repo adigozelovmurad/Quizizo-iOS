@@ -6,6 +6,11 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		FA7822A42E94357700534A5C /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = FA7822A32E94357700534A5C /* GoogleSignIn */; };
+		FA7822A62E94357700534A5C /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = FA7822A52E94357700534A5C /* GoogleSignInSwift */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		FA2198C32E8D81CD00770DBA /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -65,6 +70,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				FA7822A42E94357700534A5C /* GoogleSignIn in Frameworks */,
+				FA7822A62E94357700534A5C /* GoogleSignInSwift in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -85,6 +92,13 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		BE0B1C6050AD6D195B62EBEF /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Pods;
+			sourceTree = "<group>";
+		};
 		FA2198A32E8D81CB00770DBA = {
 			isa = PBXGroup;
 			children = (
@@ -92,6 +106,7 @@
 				FA2198C52E8D81CD00770DBA /* QuizizoTests */,
 				FA2198CF2E8D81CD00770DBA /* QuizizoUITests */,
 				FA2198AD2E8D81CB00770DBA /* Products */,
+				BE0B1C6050AD6D195B62EBEF /* Pods */,
 			);
 			sourceTree = "<group>";
 		};
@@ -124,8 +139,6 @@
 				FA2198AE2E8D81CB00770DBA /* Quizizo */,
 			);
 			name = Quizizo;
-			packageProductDependencies = (
-			);
 			productName = Quizizo;
 			productReference = FA2198AC2E8D81CB00770DBA /* Quizizo.app */;
 			productType = "com.apple.product-type.application";
@@ -147,8 +160,6 @@
 				FA2198C52E8D81CD00770DBA /* QuizizoTests */,
 			);
 			name = QuizizoTests;
-			packageProductDependencies = (
-			);
 			productName = QuizizoTests;
 			productReference = FA2198C22E8D81CD00770DBA /* QuizizoTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
@@ -170,8 +181,6 @@
 				FA2198CF2E8D81CD00770DBA /* QuizizoUITests */,
 			);
 			name = QuizizoUITests;
-			packageProductDependencies = (
-			);
 			productName = QuizizoUITests;
 			productReference = FA2198CC2E8D81CD00770DBA /* QuizizoUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
@@ -208,6 +217,10 @@
 			);
 			mainGroup = FA2198A32E8D81CB00770DBA;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				FA293D762E942D790068CC2C /* XCRemoteSwiftPackageReference "Alamofire" */,
+				FA293D772E942DA60068CC2C /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = FA2198AD2E8D81CB00770DBA /* Products */;
 			projectDirPath = "";
@@ -287,6 +300,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Quizizo/Quizizo.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 34KAT68Q9Q;
@@ -296,7 +310,6 @@
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UIMainStoryboardFile = Main;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -320,6 +333,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Quizizo/Quizizo.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 34KAT68Q9Q;
@@ -329,7 +343,6 @@
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UIMainStoryboardFile = Main;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -407,6 +420,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -464,6 +478,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				VALIDATE_PRODUCT = YES;
 			};
@@ -593,6 +608,38 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		FA293D762E942D790068CC2C /* XCRemoteSwiftPackageReference "Alamofire" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/Alamofire/Alamofire.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 5.10.2;
+			};
+		};
+		FA293D772E942DA60068CC2C /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/google/GoogleSignIn-iOS.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 9.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		FA7822A32E94357700534A5C /* GoogleSignIn */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FA293D772E942DA60068CC2C /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
+			productName = GoogleSignIn;
+		};
+		FA7822A52E94357700534A5C /* GoogleSignInSwift */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FA293D772E942DA60068CC2C /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
+			productName = GoogleSignInSwift;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = FA2198A42E8D81CB00770DBA /* Project object */;
 }

@@ -4,8 +4,9 @@
 //
 //  Created by MURAD on 1.10.2025.
 //
-
 import UIKit
+import GoogleSignInSwift
+import GoogleSignIn
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
@@ -59,4 +60,5 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
 
 }
+
 
