@@ -5,6 +5,13 @@
 //  Created by MURAD on 3.10.2025.
 //
 
+//
+//  SplashViewController.swift
+//  Quizizo
+//
+//  Created by MURAD on 3.10.2025.
+//
+
 import UIKit
 
 class SplashViewController: UIViewController {

@@ -2,6 +2,16 @@
 //  KeychainManager.swift
 //  Quizizo
 //
+<<<<<<< HEAD
+=======
+//  Created by MURAD on 8.10.2025.
+//
+
+//
+//  KeychainManager.swift
+//  Quizizo
+//
+>>>>>>> 62d763c (Leaderboard seyfesi dizayn edildi.)
 //  Created by MURAD on 7.10.2025.
 //
 import Foundation
