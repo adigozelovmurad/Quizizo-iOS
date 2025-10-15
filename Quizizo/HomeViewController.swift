@@ -4,6 +4,7 @@
 //
 //  Created by MURAD on 7.10.2025.
 //
+
 import UIKit
 
 class HomeViewController: UIViewController {
@@ -422,6 +423,11 @@ class HomeViewController: UIViewController {
         statsIcon.tintColor = UIColor(red: 0.0, green: 0.0, blue: 0.0, alpha: 0.2)
         statsIcon.contentMode = .scaleAspectFit
 
+        // ✅ Leaderboard keçidi əlavə edildi
+        statsIcon.isUserInteractionEnabled = true
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(leaderboardTapped))
+        statsIcon.addGestureRecognizer(tapGesture)
+
         bottomNavView.addSubview(homeIcon)
         bottomNavView.addSubview(statsIcon)
 
@@ -466,7 +472,7 @@ class HomeViewController: UIViewController {
             profileImageView.heightAnchor.constraint(equalToConstant: 56),
 
             statsCardView.topAnchor.constraint(equalTo: xpContainerView.bottomAnchor, constant: 12),
-            statsCardView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 30),
+            statsCardView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
             statsCardView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
             statsCardView.heightAnchor.constraint(equalToConstant: 132),
 
@@ -501,6 +507,16 @@ class HomeViewController: UIViewController {
     @objc private func playButtonTapped() {
         print("🎮 Play button tapped")
     }
+
+    // ✅ Leaderboard-a keçid
+    @objc private func leaderboardTapped() {
+        print("🏆 Leaderboard button tapped")
+        let leaderboardVC = LeaderboardViewController()
+        leaderboardVC.modalPresentationStyle = UIModalPresentationStyle.fullScreen
+        leaderboardVC.modalTransitionStyle = UIModalTransitionStyle.crossDissolve
+        present(leaderboardVC, animated: true)
+    }
+
 
     private func loadUserData() {
         nameLabel.text = userName

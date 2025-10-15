@@ -4,7 +4,6 @@
 //
 //  Created by MURAD on 3.10.2025.
 
-
 import UIKit
 import GoogleSignIn
 import GoogleSignInSwift
@@ -17,34 +16,6 @@ class AuthViewController: UIViewController {
         setupGradientBackground()
         addBackgroundOvals()
         setupUI()
-
-
-//        // TEST Button
-//        let testButton = UIButton(type: .system)
-//        testButton.setTitle("Test Keychain", for: .normal)
-//        testButton.setTitleColor(.white, for: .normal)
-//        testButton.backgroundColor = .systemBlue
-//        testButton.layer.cornerRadius = 10
-//        testButton.translatesAutoresizingMaskIntoConstraints = false
-//        testButton.addTarget(self, action: #selector(testKeychain), for: .touchUpInside)
-//        view.addSubview(testButton)
-//
-//        NSLayoutConstraint.activate([
-//            testButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-//            testButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
-//            testButton.widthAnchor.constraint(equalToConstant: 180),
-//            testButton.heightAnchor.constraint(equalToConstant: 50)
-//        ])
-
-
-
-        KeychainManager.save(key: "testToken", value: "hello_keychain")
-            if let value = KeychainManager.read(key: "testToken") {
-                print("✅ Keychain işləyir, oxunan dəyər: \(value)")
-            } else {
-                print("❌ Keychain işləməyib")
-            }
-        
     }
 
     // MARK: - Gradient Background
@@ -83,32 +54,6 @@ class AuthViewController: UIViewController {
             oval2.widthAnchor.constraint(equalToConstant: 200),
             oval2.heightAnchor.constraint(equalToConstant: 200)
         ])
-    }
-
-    private func sendTokenToBackend(idToken: String, provider: String) {
-        let url = URL(string: "https://api.quizizo.com/auth/login")!
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-
-        let body: [String: Any] = [
-            "provider": provider,
-            "idToken": idToken,
-            "country": "AZ"
-        ]
-        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
-
-        URLSession.shared.dataTask(with: request) { data, response, error in
-            if let error = error {
-                print("❌ Backend error:", error)
-                return
-            }
-
-            guard let data = data else { return }
-            if let json = try? JSONSerialization.jsonObject(with: data) {
-                print("✅ Backend response:", json)
-            }
-        }.resume()
     }
 
     // MARK: - UI Setup
@@ -218,7 +163,7 @@ class AuthViewController: UIViewController {
 
     // MARK: - Button Actions
     @objc private func googleTapped() {
-        print("Google button tapped")
+        print("🔵 Google button tapped")
         #if canImport(GoogleSignIn)
         let clientID = "922139816361-9elohg4r6tb7l4rfkdqrq3lmcgv58gp0.apps.googleusercontent.com"
         let config = GIDConfiguration(clientID: clientID)
@@ -229,20 +174,28 @@ class AuthViewController: UIViewController {
                 print("❌ Google Sign-In failed:", error.localizedDescription)
                 return
             }
-            guard let user = result?.user else { return }
-
-            // Tokenu Keychain-ə saxla
-            if let idToken = user.idToken?.tokenString {
-                KeychainManager.save(key: "authToken", value: idToken)
-                self?.sendTokenToBackend(idToken: idToken, provider: "google")
+            guard let self = self else { return }
+            guard let user = result?.user else {
+                print("❌ User not found after sign-in")
+                return
             }
 
-            // HOME EKRANINA KEÇİD
-            self?.navigateToHome(
-                name: user.profile?.name ?? "User",
-                email: user.profile?.email ?? "",
-                photoURL: user.profile?.imageURL(withDimension: 200)?.absoluteString
-            )
+            print("✅ Google Sign-In successful")
+            print("👤 User:", user.profile?.name ?? "N/A")
+
+            let accessToken = user.accessToken.tokenString
+            print("🔑 Sending ACCESS token to backend...")
+
+            // ✅ Dəyişiklik burada — provider artıq "google" olur
+            self.sendTokenToBackend(idToken: accessToken, provider: "google")
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                self.navigateToHome(
+                    name: user.profile?.name ?? "User",
+                    email: user.profile?.email ?? "",
+                    photoURL: user.profile?.imageURL(withDimension: 200)?.absoluteString
+                )
+            }
         }
         #endif
     }
@@ -252,33 +205,68 @@ class AuthViewController: UIViewController {
         let fakeToken = "demo_apple_token_12345"
         KeychainManager.save(key: "authToken", value: fakeToken)
         sendTokenToBackend(idToken: fakeToken, provider: "apple")
-
-        // HOME EKRANINA KEÇİD (Demo üçün)
         navigateToHome(name: "Demo User", email: "demo@apple.com", photoURL: nil)
     }
 
-    @objc private func testKeychain() {
-        print("🔹 Test düyməsi basıldı")
+    // MARK: - Backend Communication
+    private func sendTokenToBackend(idToken: String, provider: String) {
+        let url = URL(string: "https://api.quizizo.com/auth/login")!
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
-        // YAZ
-        KeychainManager.save(key: "testToken", value: "hello_keychain")
+        let body: [String: Any] = [
+            "provider": provider,
+            "idToken": idToken,
+            "country": "TR" // ✅ country artıq TR olaraq sabitlənib
+        ]
+        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
 
-        // OXU
-        if let value = KeychainManager.read(key: "testToken") {
-            print("✅ Keychain işləyir, oxunan dəyər: \(value)")
-        } else {
-            print("❌ Keychain işləməyib")
-        }
+        print("📡 Sending request to backend...")
 
-        // SİL
-        KeychainManager.delete(key: "testToken")
-        if KeychainManager.read(key: "testToken") == nil {
-            print("✅ Token uğurla silindi")
-        } else {
-            print("❌ Token hələ də qalır")
-        }
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                print("❌ Backend error:", error.localizedDescription)
+                return
+            }
+
+            guard let data = data else {
+                print("❌ No data received from backend")
+                return
+            }
+
+            if let jsonString = String(data: data, encoding: .utf8) {
+                print("✅ Backend response:", jsonString)
+            }
+
+            do {
+                if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                    if let token = json["token"] as? String {
+                        print("✅ JWT Token received (root level)")
+                        KeychainManager.save(key: "authToken", value: token)
+                    } else if let dataObj = json["data"] as? [String: Any],
+                              let token = dataObj["token"] as? String {
+                        print("✅ JWT Token received (nested in data)")
+                        KeychainManager.save(key: "authToken", value: token)
+                    } else if let token = json["accessToken"] as? String {
+                        print("✅ JWT Token received (accessToken)")
+                        KeychainManager.save(key: "authToken", value: token)
+                    } else {
+                        print("❌ Token not found in response")
+                        print("Available keys:", json.keys)
+                    }
+
+                    if let savedToken = KeychainManager.read(key: "authToken") {
+                        print("✅ Verified: Token is in Keychain:", savedToken.prefix(20))
+                    } else {
+                        print("❌ Token was NOT saved to Keychain")
+                    }
+                }
+            } catch {
+                print("❌ Failed to parse backend response:", error)
+            }
+        }.resume()
     }
-
 
     // MARK: - Navigation
     private func navigateToHome(name: String, email: String, photoURL: String?) {

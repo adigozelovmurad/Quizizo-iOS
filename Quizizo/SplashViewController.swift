@@ -30,8 +30,8 @@ class SplashViewController: UIViewController {
         let gradientLayer = CAGradientLayer()
         gradientLayer.colors = [
 
-            UIColor(red: 0x7C/255.0, green: 0x5E/255.0, blue: 0xF1/255.0, alpha: 1.0).cgColor,  // #7C5EF1
-            UIColor(red: 0xE2/255.0, green: 0x7B/255.0, blue: 0xF5/255.0, alpha: 1.0).cgColor, // #E27BF5
+            UIColor(red: 0x7C/255.0, green: 0x5E/255.0, blue: 0xF1/255.0, alpha: 1.0).cgColor,  
+            UIColor(red: 0xE2/255.0, green: 0x7B/255.0, blue: 0xF5/255.0, alpha: 1.0).cgColor,
         ]
         gradientLayer.startPoint = CGPoint(x: 1.5, y: 0.25)
         gradientLayer.endPoint = CGPoint(x: 0.25, y: 1.5)
