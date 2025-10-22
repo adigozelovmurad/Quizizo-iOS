@@ -7,11 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-<<<<<<< HEAD
-=======
-		FA5E119C2E95DB46005BFAAD /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = FA5E119B2E95DB46005BFAAD /* GoogleSignIn */; };
-		FA5E119E2E95DB46005BFAAD /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = FA5E119D2E95DB46005BFAAD /* GoogleSignInSwift */; };
->>>>>>> 62d763c (Leaderboard seyfesi dizayn edildi.)
 		FA7822A42E94357700534A5C /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = FA7822A32E94357700534A5C /* GoogleSignIn */; };
 		FA7822A62E94357700534A5C /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = FA7822A52E94357700534A5C /* GoogleSignInSwift */; };
 /* End PBXBuildFile section */
@@ -77,11 +72,6 @@
 			files = (
 				FA7822A42E94357700534A5C /* GoogleSignIn in Frameworks */,
 				FA7822A62E94357700534A5C /* GoogleSignInSwift in Frameworks */,
-<<<<<<< HEAD
-=======
-				FA5E119C2E95DB46005BFAAD /* GoogleSignIn in Frameworks */,
-				FA5E119E2E95DB46005BFAAD /* GoogleSignInSwift in Frameworks */,
->>>>>>> 62d763c (Leaderboard seyfesi dizayn edildi.)
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -149,6 +139,10 @@
 				FA2198AE2E8D81CB00770DBA /* Quizizo */,
 			);
 			name = Quizizo;
+			packageProductDependencies = (
+				FA7822A32E94357700534A5C /* GoogleSignIn */,
+				FA7822A52E94357700534A5C /* GoogleSignInSwift */,
+			);
 			productName = Quizizo;
 			productReference = FA2198AC2E8D81CB00770DBA /* Quizizo.app */;
 			productType = "com.apple.product-type.application";
@@ -639,19 +633,6 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-<<<<<<< HEAD
-=======
-		FA5E119B2E95DB46005BFAAD /* GoogleSignIn */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = FA293D772E942DA60068CC2C /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
-			productName = GoogleSignIn;
-		};
-		FA5E119D2E95DB46005BFAAD /* GoogleSignInSwift */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = FA293D772E942DA60068CC2C /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
-			productName = GoogleSignInSwift;
-		};
->>>>>>> 62d763c (Leaderboard seyfesi dizayn edildi.)
 		FA7822A32E94357700534A5C /* GoogleSignIn */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = FA293D772E942DA60068CC2C /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
