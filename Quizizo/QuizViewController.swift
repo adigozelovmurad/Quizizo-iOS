@@ -1,0 +1,527 @@
+//
+//  QuizViewController.swift
+//  Quizizo
+//
+//  Created by MURAD on 26.10.2025.
+//
+
+import UIKit
+
+class QuizViewController: UIViewController {
+
+    private let questionImageView = UIImageView()
+    private let textAnswerView = UITextView()
+    private let sendButton = UIButton()
+    private let closeButton = UIButton()
+    private let timerContainerView = UIView()
+    private let timerIconImageView = UIImageView()
+    private let timerLabel = UILabel()
+    private let questionCardView = UIView()
+    private let questionLabel = UILabel()
+    private let optionButtons: [UIButton] = (0..<4).map { _ in UIButton() }
+
+    private var questionId: String = ""
+    private var correctAnswerIndex: Int = -1
+    private var countdown: Int = 59
+    private var timer: Timer?
+    private var selectedOptionIndex: Int?
+
+    // 🔥 Dinamik constraint-lər üçün
+    private var optionButtonTopConstraints: [NSLayoutConstraint] = []
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        setupGradientBackground()
+        addBackgroundOvals()
+        setupUI()
+        setupConstraints()
+        startTimer()
+        loadNextQuestion()
+    }
+
+    private func setupGradientBackground() {
+        view.backgroundColor = .white
+    }
+
+    private func setupQuestionImage() {
+        view.addSubview(questionImageView)
+        questionImageView.translatesAutoresizingMaskIntoConstraints = false
+        questionImageView.contentMode = .scaleAspectFill
+        questionImageView.layer.cornerRadius = 16
+        questionImageView.clipsToBounds = true
+        questionImageView.backgroundColor = UIColor(red: 0xF2/255.0, green: 0xE8/255.0, blue: 0xF2/255.0, alpha: 1.0)
+        questionImageView.isHidden = true
+
+
+    }
+
+    private func setupTextAnswer() {
+        view.addSubview(textAnswerView)
+        view.addSubview(sendButton)
+
+        textAnswerView.translatesAutoresizingMaskIntoConstraints = false
+        textAnswerView.layer.cornerRadius = 30
+        textAnswerView.layer.borderWidth = 1.5
+        textAnswerView.layer.borderColor = UIColor(red: 0x7C/255.0, green: 0x5E/255.0, blue: 0xF1/255.0, alpha: 0.3).cgColor
+        textAnswerView.backgroundColor = .white
+        textAnswerView.font = UIFont.systemFont(ofSize: 16)
+        textAnswerView.textContainerInset = UIEdgeInsets(top: 16, left: 20, bottom: 16, right: 20)
+        textAnswerView.isHidden = true
+
+        sendButton.translatesAutoresizingMaskIntoConstraints = false
+        sendButton.setTitle("Send", for: .normal)
+        sendButton.titleLabel?.font = UIFont.systemFont(ofSize: 18, weight: .semibold)
+        sendButton.layer.cornerRadius = 30
+        sendButton.isHidden = true
+        sendButton.addTarget(self, action: #selector(sendTextAnswer), for: .touchUpInside)
+
+
+        let gradientLayer = CAGradientLayer()
+        gradientLayer.colors = [
+            UIColor(red: 0xE2/255.0, green: 0x7B/255.0, blue: 0xF5/255.0, alpha: 1.0).cgColor,
+            UIColor(red: 0x7C/255.0, green: 0x5E/255.0, blue: 0xF1/255.0, alpha: 1.0).cgColor
+        ]
+        gradientLayer.startPoint = CGPoint(x: 0, y: 0)
+        gradientLayer.endPoint = CGPoint(x: 1, y: 1)
+        gradientLayer.frame = CGRect(x: 0, y: 0, width: 300, height: 60)
+        gradientLayer.cornerRadius = 30
+
+        UIGraphicsBeginImageContext(gradientLayer.bounds.size)
+        gradientLayer.render(in: UIGraphicsGetCurrentContext()!)
+        let gradientImage = UIGraphicsGetImageFromCurrentImageContext()
+        UIGraphicsEndImageContext()
+        sendButton.setBackgroundImage(gradientImage, for: .normal)
+
+        NSLayoutConstraint.activate([
+            textAnswerView.topAnchor.constraint(equalTo: questionCardView.bottomAnchor, constant: 24),
+            textAnswerView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 28),
+            textAnswerView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -28),
+            textAnswerView.heightAnchor.constraint(equalToConstant: 120),
+
+            sendButton.topAnchor.constraint(equalTo: textAnswerView.bottomAnchor, constant: 16),
+            sendButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            sendButton.widthAnchor.constraint(greaterThanOrEqualToConstant: 200),
+            sendButton.heightAnchor.constraint(equalToConstant: 60)
+        ])
+    }
+
+    private func addBackgroundOvals() {
+        let oval1 = UIImageView(image: UIImage(named: "Oval2")?.withRenderingMode(.alwaysTemplate))
+        oval1.contentMode = .scaleAspectFit
+        oval1.tintColor = UIColor(red: 0xA8/255.0, green: 0x7D/255.0, blue: 0xF5/255.0, alpha: 1.0)
+        oval1.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(oval1)
+        view.sendSubviewToBack(oval1)
+
+        let oval2 = UIImageView(image: UIImage(named: "Oval1")?.withRenderingMode(.alwaysTemplate))
+        oval2.contentMode = .scaleAspectFit
+        oval2.tintColor = UIColor(red: 0xA8/255.0, green: 0x7D/255.0, blue: 0xF5/255.0, alpha: 1.0)
+        oval2.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(oval2)
+        view.sendSubviewToBack(oval2)
+
+        NSLayoutConstraint.activate([
+            oval1.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: -43),
+            oval1.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 231),
+            oval1.widthAnchor.constraint(equalToConstant: 200),
+            oval1.heightAnchor.constraint(equalToConstant: 200),
+
+            oval2.topAnchor.constraint(equalTo: view.topAnchor, constant: 130),
+            oval2.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: -40),
+            oval2.widthAnchor.constraint(equalToConstant: 200),
+            oval2.heightAnchor.constraint(equalToConstant: 200)
+        ])
+    }
+
+    private func setupUI() {
+        setupCloseButton()
+        setupTimer()
+        setupQuestionCard()
+        setupQuestionImage()
+        setupTextAnswer()
+        setupOptionButtons()
+    }
+
+    private func setupCloseButton() {
+        view.addSubview(closeButton)
+        closeButton.translatesAutoresizingMaskIntoConstraints = false
+        closeButton.layer.cornerRadius = 25
+        closeButton.clipsToBounds = true
+
+        let config = UIImage.SymbolConfiguration(pointSize: 20, weight: .bold)
+        closeButton.setImage(UIImage(systemName: "xmark", withConfiguration: config), for: .normal)
+        closeButton.tintColor = .white
+        closeButton.addTarget(self, action: #selector(closeButtonTapped), for: .touchUpInside)
+
+        let gradientLayer = CAGradientLayer()
+        gradientLayer.colors = [
+            UIColor(red: 0xE2/255.0, green: 0x7B/255.0, blue: 0xF5/255.0, alpha: 1.0).cgColor,
+            UIColor(red: 0x7C/255.0, green: 0x5E/255.0, blue: 0xF1/255.0, alpha: 1.0).cgColor
+        ]
+        gradientLayer.startPoint = CGPoint(x: 0, y: 0)
+        gradientLayer.endPoint = CGPoint(x: 1, y: 1)
+        gradientLayer.frame = CGRect(x: 0, y: 0, width: 50, height: 50)
+        gradientLayer.cornerRadius = 25
+
+        UIGraphicsBeginImageContext(gradientLayer.bounds.size)
+        gradientLayer.render(in: UIGraphicsGetCurrentContext()!)
+        let gradientImage = UIGraphicsGetImageFromCurrentImageContext()
+        UIGraphicsEndImageContext()
+
+        closeButton.setBackgroundImage(gradientImage, for: .normal)
+    }
+
+    private func setupTimer() {
+        view.addSubview(timerContainerView)
+        timerContainerView.translatesAutoresizingMaskIntoConstraints = false
+        timerContainerView.layer.cornerRadius = 30
+
+        let gradientLayer = CAGradientLayer()
+        gradientLayer.colors = [
+            UIColor(red: 0xE2/255.0, green: 0x7B/255.0, blue: 0xF5/255.0, alpha: 1.0).cgColor,
+            UIColor(red: 0x7C/255.0, green: 0x5E/255.0, blue: 0xF1/255.0, alpha: 1.0).cgColor
+        ]
+        gradientLayer.startPoint = CGPoint(x: 0, y: 0)
+        gradientLayer.endPoint = CGPoint(x: 1, y: 1)
+        gradientLayer.frame = CGRect(x: 0, y: 0, width: 150, height: 60)
+        gradientLayer.cornerRadius = 30
+        timerContainerView.layer.insertSublayer(gradientLayer, at: 0)
+
+        timerContainerView.addSubview(timerIconImageView)
+        timerIconImageView.translatesAutoresizingMaskIntoConstraints = false
+        timerIconImageView.image = UIImage(systemName: "clock.fill")
+        timerIconImageView.tintColor = .white
+        timerIconImageView.contentMode = .scaleAspectFit
+
+        timerContainerView.addSubview(timerLabel)
+        timerLabel.translatesAutoresizingMaskIntoConstraints = false
+        timerLabel.font = UIFont.systemFont(ofSize: 24, weight: .bold)
+        timerLabel.textColor = .white
+        timerLabel.text = "00:59"
+    }
+
+    private func setupQuestionCard() {
+        view.addSubview(questionCardView)
+        questionCardView.translatesAutoresizingMaskIntoConstraints = false
+        questionCardView.backgroundColor = UIColor(red: 0xF2/255.0, green: 0xE8/255.0, blue: 0xF2/255.0, alpha: 1.0)
+        questionCardView.layer.cornerRadius = 30
+
+        questionCardView.addSubview(questionLabel)
+        questionLabel.translatesAutoresizingMaskIntoConstraints = false
+        questionLabel.font = UIFont.systemFont(ofSize: 22, weight: .semibold)
+        questionLabel.textColor = UIColor(red: 0.1, green: 0.1, blue: 0.2, alpha: 1.0)
+        questionLabel.numberOfLines = 0
+        questionLabel.textAlignment = .center
+    }
+
+    private func setupOptionButtons() {
+        for (index, button) in optionButtons.enumerated() {
+            view.addSubview(button)
+            button.translatesAutoresizingMaskIntoConstraints = false
+            button.backgroundColor = .white
+            button.layer.cornerRadius = 30
+            button.layer.borderWidth = 1.5
+            button.layer.borderColor = UIColor(red: 0x7C/255.0, green: 0x5E/255.0, blue: 0xF1/255.0, alpha: 0.3).cgColor
+            button.contentHorizontalAlignment = .left
+            button.contentEdgeInsets = UIEdgeInsets(top: 0, left: 24, bottom: 0, right: 24)
+            button.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .medium)
+            button.setTitleColor(UIColor(red: 0.2, green: 0.2, blue: 0.3, alpha: 1.0), for: .normal)
+            button.tag = index
+            button.addTarget(self, action: #selector(optionButtonTapped(_:)), for: .touchUpInside)
+            button.isHidden = true
+        }
+    }
+
+    private func setupConstraints() {
+        NSLayoutConstraint.activate([
+            closeButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 16),
+            closeButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
+            closeButton.widthAnchor.constraint(equalToConstant: 50),
+            closeButton.heightAnchor.constraint(equalToConstant: 50),
+
+            timerContainerView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 16),
+            timerContainerView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            timerContainerView.heightAnchor.constraint(equalToConstant: 60),
+            timerContainerView.widthAnchor.constraint(equalToConstant: 150),
+
+            timerIconImageView.leadingAnchor.constraint(equalTo: timerContainerView.leadingAnchor, constant: 20),
+            timerIconImageView.centerYAnchor.constraint(equalTo: timerContainerView.centerYAnchor),
+            timerIconImageView.widthAnchor.constraint(equalToConstant: 26),
+            timerIconImageView.heightAnchor.constraint(equalToConstant: 26),
+
+            timerLabel.leadingAnchor.constraint(equalTo: timerIconImageView.trailingAnchor, constant: 10),
+            timerLabel.centerYAnchor.constraint(equalTo: timerContainerView.centerYAnchor),
+            timerLabel.trailingAnchor.constraint(equalTo: timerContainerView.trailingAnchor, constant: -20),
+
+            questionCardView.topAnchor.constraint(equalTo: timerContainerView.bottomAnchor, constant: 50),
+            questionCardView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 28),
+            questionCardView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -28),
+            questionCardView.heightAnchor.constraint(greaterThanOrEqualToConstant: 160),
+
+            questionLabel.topAnchor.constraint(equalTo: questionCardView.topAnchor, constant: 50),
+            questionLabel.leadingAnchor.constraint(equalTo: questionCardView.leadingAnchor, constant: 28),
+            questionLabel.trailingAnchor.constraint(equalTo: questionCardView.trailingAnchor, constant: -28),
+            questionLabel.bottomAnchor.constraint(equalTo: questionCardView.bottomAnchor, constant: -50)
+        ])
+
+        updateOptionButtonConstraints()
+    }
+
+    // 🔥 Dinamik constraint yeniləmə
+    private func updateOptionButtonConstraints() {
+        NSLayoutConstraint.deactivate(optionButtonTopConstraints)
+        optionButtonTopConstraints.removeAll()
+
+        // 🖼️ Şəkil üçün constraint-lər
+        if !questionImageView.isHidden {
+            NSLayoutConstraint.activate([
+                questionImageView.topAnchor.constraint(equalTo: questionCardView.bottomAnchor, constant: 20),
+                questionImageView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 28),
+                questionImageView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -28),
+                questionImageView.heightAnchor.constraint(equalToConstant: 160)
+            ])
+        }
+
+        for (index, button) in optionButtons.enumerated() {
+            guard !button.isHidden else { continue }
+
+            var topConstraint: NSLayoutConstraint
+
+            if index == 0 {
+
+                if !questionImageView.isHidden {
+                    topConstraint = button.topAnchor.constraint(equalTo: questionImageView.bottomAnchor, constant: 20)
+                } else if !textAnswerView.isHidden {
+                    topConstraint = button.topAnchor.constraint(equalTo: sendButton.bottomAnchor, constant: 20)
+                } else {
+                    topConstraint = button.topAnchor.constraint(equalTo: questionCardView.bottomAnchor, constant: 24)
+                }
+            } else {
+                topConstraint = button.topAnchor.constraint(equalTo: optionButtons[index - 1].bottomAnchor, constant: 12)
+            }
+
+            optionButtonTopConstraints.append(topConstraint)
+
+            NSLayoutConstraint.activate([
+                topConstraint,
+                button.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 28),
+                button.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -28),
+                button.heightAnchor.constraint(equalToConstant: 60)
+            ])
+        }
+    }
+
+    private func startTimer() {
+        countdown = 59
+        timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
+            guard let self = self else { return }
+            if self.countdown > 0 {
+                self.countdown -= 1
+                self.updateTimerLabel()
+            } else {
+                self.timer?.invalidate()
+                self.timeExpired()
+            }
+        }
+    }
+
+    private func updateTimerLabel() {
+        let minutes = countdown / 60
+        let seconds = countdown % 60
+        timerLabel.text = String(format: "%02d:%02d", minutes, seconds)
+    }
+
+    private func timeExpired() {
+        print("⏰ Vaxt bitdi!")
+        loadNextQuestion()
+    }
+
+    // MARK: - API Integration
+    func loadNextQuestion() {
+       
+        testLoadQuestion()
+    }
+
+    // 🧪 Test üçün mock data
+    private var testQuestionIndex = 0
+    private func testLoadQuestion() {
+        let questions: [[String: Any]] = [
+            // Normal sual
+            [
+                "questionText": "Which of these landmarks is located in Rome?",
+                "options": ["A) Eiffel Tower", "B) Colosseum", "C) Big Ben", "D) Statue of Liberty"],
+                "correctIndex": 1
+            ],
+            // Şəkilli sual
+            [
+                "questionText": "Which of these landmarks is apple located in France?",
+                "questionImage": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c3/Flag_of_France.svg/800px-Flag_of_France.svg.png",
+                "options": ["A) Paris", "B) London", "C) Rome", "D) Berlin"],
+                "correctIndex": 0
+            ],
+            // Açıq cavab
+            [
+                "questionText": "What is the capital of Azerbaijan?",
+                "type": "OPEN_TEXT"
+            ]
+        ]
+
+        let data = questions[testQuestionIndex % questions.count]
+        testQuestionIndex += 1
+
+        DispatchQueue.main.async {
+            self.processQuestion(data: data)
+        }
+    }
+
+    private func processQuestion(data: [String: Any]) {
+        // UI reset
+        optionButtons.forEach {
+            $0.isHidden = true
+            $0.backgroundColor = .white
+        }
+        textAnswerView.isHidden = true
+        textAnswerView.text = ""
+        sendButton.isHidden = true
+        questionImageView.isHidden = true
+        questionImageView.image = nil
+
+        // Əvvəlki image constraint-lərini təmizlə
+        questionImageView.constraints.forEach { $0.isActive = false }
+
+        // Sual mətni
+        if let qText = data["questionText"] as? String {
+            questionLabel.text = qText
+        }
+
+        // Sualın tipi
+        if let type = data["type"] as? String, type.uppercased() == "OPEN_TEXT" {
+            // 🔹 Açıq cavab
+            textAnswerView.isHidden = false
+            sendButton.isHidden = false
+        } else if let imageUrl = data["questionImage"] as? String, !imageUrl.isEmpty {
+            // 🔹 Şəkilli sual
+            questionImageView.isHidden = false
+            loadImage(from: imageUrl)
+            showOptions(from: data)
+        } else {
+            // 🔹 Normal variantlı sual
+            showOptions(from: data)
+        }
+
+        // Constraint-ləri yenilə
+        updateOptionButtonConstraints()
+
+        // Force layout update
+        view.setNeedsLayout()
+        view.layoutIfNeeded()
+
+        // Timer restart
+        countdown = 59
+    }
+
+    private func showOptions(from data: [String: Any]) {
+        var optionsArray: [String] = []
+
+        if let opts = data["options"] as? [String] {
+            optionsArray = opts
+        }
+
+        for (i, btn) in optionButtons.enumerated() {
+            if i < optionsArray.count {
+                btn.isHidden = false
+                btn.setTitle(optionsArray[i], for: .normal)
+                btn.backgroundColor = .white
+                btn.setTitleColor(UIColor(red: 0.2, green: 0.2, blue: 0.3, alpha: 1.0), for: .normal)
+                btn.layer.borderColor = UIColor(red: 0x7C/255.0, green: 0x5E/255.0, blue: 0xF1/255.0, alpha: 0.3).cgColor
+            } else {
+                btn.isHidden = true
+            }
+        }
+
+        if let c = data["correctIndex"] as? Int {
+            correctAnswerIndex = c
+        }
+    }
+
+    private func loadImage(from urlString: String) {
+        print("🖼️ Loading image from: \(urlString)")
+        guard let url = URL(string: urlString) else {
+            print("❌ Invalid URL")
+            return
+        }
+
+        // Placeholder göstər
+        questionImageView.backgroundColor = UIColor(red: 0xF2/255.0, green: 0xE8/255.0, blue: 0xF2/255.0, alpha: 1.0)
+
+        URLSession.shared.dataTask(with: url) { [weak self] data, response, error in
+            if let error = error {
+                print("❌ Image load error: \(error)")
+                return
+            }
+
+            guard let data = data, let image = UIImage(data: data) else {
+                print("❌ Could not create image from data")
+                return
+            }
+
+            DispatchQueue.main.async {
+                print("✅ Image loaded successfully")
+                self?.questionImageView.image = image
+                self?.questionImageView.backgroundColor = .clear
+            }
+        }.resume()
+    }
+
+    @objc private func sendTextAnswer() {
+        let answerText = textAnswerView.text ?? ""
+        print("📤 Open answer:", answerText)
+
+        // Vizual feedback
+        sendButton.alpha = 0.5
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            self.sendButton.alpha = 1.0
+            self.loadNextQuestion()
+        }
+    }
+
+    @objc private func optionButtonTapped(_ sender: UIButton) {
+        let index = sender.tag
+        selectOption(at: index)
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            let isCorrect = (index == self.correctAnswerIndex)
+            sender.backgroundColor = isCorrect ? .systemGreen : .systemRed
+
+            if !isCorrect && self.correctAnswerIndex >= 0 {
+                self.optionButtons[self.correctAnswerIndex].backgroundColor = .systemGreen
+            }
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                self.loadNextQuestion()
+            }
+        }
+    }
+
+    private func selectOption(at index: Int) {
+        for button in optionButtons {
+            button.backgroundColor = .white
+            button.layer.borderColor = UIColor(red: 0x7C/255.0, green: 0x5E/255.0, blue: 0xF1/255.0, alpha: 0.3).cgColor
+            button.setTitleColor(UIColor(red: 0.2, green: 0.2, blue: 0.3, alpha: 1.0), for: .normal)
+        }
+
+        let selectedButton = optionButtons[index]
+        selectedButton.backgroundColor = UIColor(red: 0xA8/255.0, green: 0x7D/255.0, blue: 0xF5/255.0, alpha: 1.0)
+        selectedButton.layer.borderColor = UIColor(red: 0xA8/255.0, green: 0x7D/255.0, blue: 0xF5/255.0, alpha: 1.0).cgColor
+        selectedButton.setTitleColor(.white, for: .normal)
+    }
+
+    @objc private func closeButtonTapped() {
+        timer?.invalidate()
+        dismiss(animated: true)
+    }
+
+    deinit {
+        timer?.invalidate()
+    }
+}

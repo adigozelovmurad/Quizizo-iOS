@@ -9,7 +9,7 @@ import UIKit
 
 class HomeViewController: UIViewController {
 
-    // MARK: - Properties
+
     private let nameLabel = UILabel()
     private let xpContainerView = UIView()
     private let xpIconImageView = UIImageView()
@@ -22,13 +22,13 @@ class HomeViewController: UIViewController {
     private let playButton = UIButton()
     private let bottomNavView = UIView()
 
-    // User Data
+
     var userName: String = "Madina Omar"
     var userEmail: String = ""
     var userXP: Int = 3900
     var profileImageURL: String?
 
-    // MARK: - Lifecycle
+
     override func viewDidLoad() {
         super.viewDidLoad()
         setupGradientBackground()
@@ -38,7 +38,7 @@ class HomeViewController: UIViewController {
         loadUserData()
     }
 
-    // MARK: - Gradient Background
+
     private func setupGradientBackground() {
         let gradientLayer = CAGradientLayer()
         gradientLayer.colors = [
@@ -51,7 +51,7 @@ class HomeViewController: UIViewController {
         view.layer.insertSublayer(gradientLayer, at: 0)
     }
 
-    // MARK: - Ovals
+
     private func addBackgroundOvals() {
         let oval1 = UIImageView(image: UIImage(named: "Oval2"))
         oval1.contentMode = .scaleAspectFit
@@ -76,7 +76,7 @@ class HomeViewController: UIViewController {
         ])
     }
 
-    // MARK: - Setup UI
+
     private func setupUI() {
         setupHeader()
         setupStatsCard()
@@ -87,32 +87,32 @@ class HomeViewController: UIViewController {
     }
 
     private func setupHeader() {
-        // Name Label
+
         view.addSubview(nameLabel)
         nameLabel.translatesAutoresizingMaskIntoConstraints = false
         nameLabel.font = UIFont.systemFont(ofSize: 24, weight: .bold)
         nameLabel.textColor = .white
         nameLabel.text = userName
 
-        // XP Container
+
         view.addSubview(xpContainerView)
         xpContainerView.translatesAutoresizingMaskIntoConstraints = false
 
 
-        // XP Icon
+
         xpContainerView.addSubview(xpIconImageView)
         xpIconImageView.translatesAutoresizingMaskIntoConstraints = false
         xpIconImageView.image = UIImage(named: "Xp")
         xpIconImageView.contentMode = .scaleAspectFit
 
-        // XP Label
+
         xpContainerView.addSubview(xpLabel)
         xpLabel.translatesAutoresizingMaskIntoConstraints = false
         xpLabel.font = UIFont.systemFont(ofSize: 16, weight: .bold)
         xpLabel.textColor = .white
         xpLabel.text = "XP \(userXP)"
 
-        // Profile Image
+
         view.addSubview(profileImageView)
         profileImageView.translatesAutoresizingMaskIntoConstraints = false
         profileImageView.contentMode = .scaleAspectFill
@@ -423,7 +423,7 @@ class HomeViewController: UIViewController {
         statsIcon.tintColor = UIColor(red: 0.0, green: 0.0, blue: 0.0, alpha: 0.2)
         statsIcon.contentMode = .scaleAspectFit
 
-        // ✅ Leaderboard keçidi əlavə edildi
+
         statsIcon.isUserInteractionEnabled = true
         let tapGesture = UITapGestureRecognizer(target: self, action: #selector(leaderboardTapped))
         statsIcon.addGestureRecognizer(tapGesture)
@@ -447,7 +447,7 @@ class HomeViewController: UIViewController {
         ])
     }
 
-    // MARK: - Constraints
+
     private func setupConstraints() {
         NSLayoutConstraint.activate([
             nameLabel.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
@@ -503,12 +503,15 @@ class HomeViewController: UIViewController {
         ])
     }
 
-    // MARK: - Actions
+
     @objc private func playButtonTapped() {
         print("🎮 Play button tapped")
+        let quizVC = QuizViewController()
+        quizVC.modalPresentationStyle = .fullScreen
+        quizVC.modalTransitionStyle = .crossDissolve
+        present(quizVC, animated: true)
     }
 
-    // ✅ Leaderboard-a keçid
     @objc private func leaderboardTapped() {
         print("🏆 Leaderboard button tapped")
         let leaderboardVC = LeaderboardViewController()
