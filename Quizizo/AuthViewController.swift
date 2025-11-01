@@ -18,7 +18,7 @@ class AuthViewController: UIViewController {
         setupUI()
     }
 
-    // MARK: - Gradient Background
+
     private func setupGradientBackground() {
         let gradientLayer = CAGradientLayer()
         gradientLayer.colors = [
@@ -31,7 +31,7 @@ class AuthViewController: UIViewController {
         view.layer.insertSublayer(gradientLayer, at: 0)
     }
 
-    // MARK: - Ovals
+
     private func addBackgroundOvals() {
         let oval1 = UIImageView(image: UIImage(named: "Oval2"))
         oval1.contentMode = .scaleAspectFit
@@ -56,7 +56,7 @@ class AuthViewController: UIViewController {
         ])
     }
 
-    // MARK: - UI Setup
+
     private func setupUI() {
         let logoImageView = UIImageView(image: UIImage(named: "Star"))
         logoImageView.contentMode = .scaleAspectFit
@@ -126,7 +126,7 @@ class AuthViewController: UIViewController {
         ])
     }
 
-    // MARK: - Button Factory
+
     private func createButton(title: String, titleColor: UIColor, backgroundColor: UIColor, iconName: String) -> UIButton {
         let button = UIButton(type: .system)
         button.backgroundColor = backgroundColor
@@ -161,11 +161,11 @@ class AuthViewController: UIViewController {
         return button
     }
 
-    // MARK: - Button Actions
+
     @objc private func googleTapped() {
         print("🔵 Google button tapped")
         #if canImport(GoogleSignIn)
-        let clientID = "922139816361-9elohg4r6tb7l4rfkdqrq3lmcgv58gp0.apps.googleusercontent.com"
+        let clientID = "1016120007079-cf5hb598mqp9fgh9r7vuc81gsr1eq7kv.apps.googleusercontent.com"
         let config = GIDConfiguration(clientID: clientID)
         GIDSignIn.sharedInstance.configuration = config
 
@@ -183,11 +183,11 @@ class AuthViewController: UIViewController {
             print("✅ Google Sign-In successful")
             print("👤 User:", user.profile?.name ?? "N/A")
 
-            let accessToken = user.accessToken.tokenString
-            print("🔑 Sending ACCESS token to backend...")
+            let idToken = user.idToken?.tokenString
+            print("🔑 Sending ID token to backend...")
+            
+            self.sendTokenToBackend(idToken: idToken ?? "", provider: "google")
 
-            // ✅ Dəyişiklik burada — provider artıq "google" olur
-            self.sendTokenToBackend(idToken: accessToken, provider: "google")
 
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
                 self.navigateToHome(
@@ -208,7 +208,7 @@ class AuthViewController: UIViewController {
         navigateToHome(name: "Demo User", email: "demo@apple.com", photoURL: nil)
     }
 
-    // MARK: - Backend Communication
+
     private func sendTokenToBackend(idToken: String, provider: String) {
         let url = URL(string: "https://api.quizizo.com/auth/login")!
         var request = URLRequest(url: url)
@@ -218,7 +218,7 @@ class AuthViewController: UIViewController {
         let body: [String: Any] = [
             "provider": provider,
             "idToken": idToken,
-            "country": "TR" // ✅ country artıq TR olaraq sabitlənib
+            "country": "TR"
         ]
         request.httpBody = try? JSONSerialization.data(withJSONObject: body)
 
@@ -268,7 +268,7 @@ class AuthViewController: UIViewController {
         }.resume()
     }
 
-    // MARK: - Navigation
+   
     private func navigateToHome(name: String, email: String, photoURL: String?) {
         let homeVC = HomeViewController()
         homeVC.userName = name

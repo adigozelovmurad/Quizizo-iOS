@@ -1,7 +1,4 @@
 
-//  Created by MURAD on 8.10.2025.
-//
-
 //
 //  KeychainManager.swift
 //  Quizizo

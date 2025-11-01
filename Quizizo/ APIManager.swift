@@ -14,11 +14,63 @@ class APIManager {
     private let baseURL = "https://api.quizizo.com/"
 
     private var token: String {
-        // Burada Google login zamanı saxladığın token olacaq
-        return UserDefaults.standard.string(forKey: "accessToken") ?? ""
+        return KeychainManager.read(key: "authToken") ?? ""
     }
 
-    // MARK: - Sualları gətir
+
+    func fetchUserStats(completion: @escaping ([String: Any]?) -> Void) {
+        guard let url = URL(string: baseURL + "user/stats") else {
+            completion(nil)
+            return
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        URLSession.shared.dataTask(with: request) { data, _, error in
+            guard let data = data, error == nil else {
+                completion(nil)
+                return
+            }
+
+            if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                completion(json)
+            } else {
+                completion(nil)
+            }
+        }.resume()
+    }
+
+
+
+
+    func fetchUserProfile(completion: @escaping ([String: Any]?) -> Void) {
+        guard let url = URL(string: baseURL + "user/me") else {
+            completion(nil)
+            return
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        URLSession.shared.dataTask(with: request) { data, _, error in
+            guard let data = data, error == nil else {
+                completion(nil)
+                return
+            }
+
+            if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                completion(json)
+            } else {
+                completion(nil)
+            }
+        }.resume()
+    }
+
+
+
     func fetchNextQuestion(completion: @escaping ([String: Any]?) -> Void) {
         guard let url = URL(string: baseURL + "questions/next") else {
             completion(nil)
@@ -44,7 +96,7 @@ class APIManager {
         }.resume()
     }
 
-    // MARK: - Cavabı göndər
+
     func sendAnswer(questionId: String, selectedIndex: Int, duration: Int, completion: @escaping (Bool) -> Void) {
         guard let url = URL(string: baseURL + "questions/answer") else { return }
 
@@ -73,5 +125,96 @@ class APIManager {
                 completion(false)
             }
         }.resume()
+    }
+
+
+    func fetchLeaderboard(page: Int = 1, limit: Int = 50, completion: @escaping (LeaderboardResponse?) -> Void) {
+        guard let url = URL(string: baseURL + "leaderboard?page=\(page)&limit=\(limit)") else {
+            print("Invalid URL")
+            completion(nil)
+            return
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.addValue("tr", forHTTPHeaderField: "Accept-Language")
+
+        print(" Leaderboard API request: \(url.absoluteString)")
+
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                print("❌ Network error: \(error.localizedDescription)")
+                completion(nil)
+                return
+            }
+
+            if let httpResponse = response as? HTTPURLResponse {
+                print("📊 Status Code: \(httpResponse.statusCode)")
+
+                if httpResponse.statusCode != 200 {
+                    print(" API returned status code: \(httpResponse.statusCode)")
+                    completion(nil)
+                    return
+                }
+            }
+
+            guard let data = data else {
+                print("❌ No data received")
+                completion(nil)
+                return
+            }
+
+            if let jsonString = String(data: data, encoding: .utf8) {
+                print(" API Response: \(jsonString)")
+            }
+
+            do {
+                let decoder = JSONDecoder()
+                let leaderboardResponse = try decoder.decode(LeaderboardResponse.self, from: data)
+                print( "Successfully parsed leaderboard data")
+                completion(leaderboardResponse)
+            } catch {
+                print("❌ JSON Parse Error: \(error)")
+                completion(nil)
+            }
+        }.resume()
+    }
+}
+
+
+struct LeaderboardResponse: Codable {
+    let status: String
+    let message: String
+    let data: LeaderboardData
+}
+
+struct LeaderboardData: Codable {
+    let userRank: LeaderboardEntry
+    let leaders: [LeaderboardEntry]
+}
+
+struct LeaderboardEntry: Codable {
+    let userId: String
+    let name: String
+    let score: Int
+    let rank: String
+    let rankPosition: Int
+    let country: String
+    let profilePicture: String?
+
+    
+    var countryFlag: String {
+        return flag(for: country)
+    }
+
+    private func flag(for countryCode: String) -> String {
+        let base: UInt32 = 127397
+        var s = ""
+        countryCode.uppercased().unicodeScalars.forEach {
+            s.unicodeScalars.append(UnicodeScalar(base + $0.value)!)
+        }
+        return s
     }
 }

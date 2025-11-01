@@ -25,8 +25,8 @@ class QuizViewController: UIViewController {
     private var countdown: Int = 59
     private var timer: Timer?
     private var selectedOptionIndex: Int?
+    private var questionStartTime: Date?
 
-    // 🔥 Dinamik constraint-lər üçün
     private var optionButtonTopConstraints: [NSLayoutConstraint] = []
 
     override func viewDidLoad() {
@@ -46,13 +46,11 @@ class QuizViewController: UIViewController {
     private func setupQuestionImage() {
         view.addSubview(questionImageView)
         questionImageView.translatesAutoresizingMaskIntoConstraints = false
-        questionImageView.contentMode = .scaleAspectFill
+        questionImageView.contentMode = .scaleAspectFit
         questionImageView.layer.cornerRadius = 16
         questionImageView.clipsToBounds = true
         questionImageView.backgroundColor = UIColor(red: 0xF2/255.0, green: 0xE8/255.0, blue: 0xF2/255.0, alpha: 1.0)
         questionImageView.isHidden = true
-
-
     }
 
     private func setupTextAnswer() {
@@ -74,7 +72,6 @@ class QuizViewController: UIViewController {
         sendButton.layer.cornerRadius = 30
         sendButton.isHidden = true
         sendButton.addTarget(self, action: #selector(sendTextAnswer), for: .touchUpInside)
-
 
         let gradientLayer = CAGradientLayer()
         gradientLayer.colors = [
@@ -267,18 +264,16 @@ class QuizViewController: UIViewController {
         updateOptionButtonConstraints()
     }
 
-    // 🔥 Dinamik constraint yeniləmə
     private func updateOptionButtonConstraints() {
         NSLayoutConstraint.deactivate(optionButtonTopConstraints)
         optionButtonTopConstraints.removeAll()
 
-        // 🖼️ Şəkil üçün constraint-lər
         if !questionImageView.isHidden {
             NSLayoutConstraint.activate([
                 questionImageView.topAnchor.constraint(equalTo: questionCardView.bottomAnchor, constant: 20),
                 questionImageView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 28),
                 questionImageView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -28),
-                questionImageView.heightAnchor.constraint(equalToConstant: 160)
+                questionImageView.heightAnchor.constraint(equalToConstant: 200)
             ])
         }
 
@@ -288,7 +283,6 @@ class QuizViewController: UIViewController {
             var topConstraint: NSLayoutConstraint
 
             if index == 0 {
-
                 if !questionImageView.isHidden {
                     topConstraint = button.topAnchor.constraint(equalTo: questionImageView.bottomAnchor, constant: 20)
                 } else if !textAnswerView.isHidden {
@@ -313,6 +307,7 @@ class QuizViewController: UIViewController {
 
     private func startTimer() {
         countdown = 59
+        questionStartTime = Date()
         timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
             guard let self = self else { return }
             if self.countdown > 0 {
@@ -333,49 +328,105 @@ class QuizViewController: UIViewController {
 
     private func timeExpired() {
         print("⏰ Vaxt bitdi!")
-        loadNextQuestion()
+        sendAnswer(selectedIndex: -1)
     }
 
-    // MARK: - API Integration
+
     func loadNextQuestion() {
-       
-        testLoadQuestion()
-    }
+        print(" Yeni sual yüklənir...")
 
-    // 🧪 Test üçün mock data
-    private var testQuestionIndex = 0
-    private func testLoadQuestion() {
-        let questions: [[String: Any]] = [
-            // Normal sual
-            [
-                "questionText": "Which of these landmarks is located in Rome?",
-                "options": ["A) Eiffel Tower", "B) Colosseum", "C) Big Ben", "D) Statue of Liberty"],
-                "correctIndex": 1
-            ],
-            // Şəkilli sual
-            [
-                "questionText": "Which of these landmarks is apple located in France?",
-                "questionImage": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c3/Flag_of_France.svg/800px-Flag_of_France.svg.png",
-                "options": ["A) Paris", "B) London", "C) Rome", "D) Berlin"],
-                "correctIndex": 0
-            ],
-            // Açıq cavab
-            [
-                "questionText": "What is the capital of Azerbaijan?",
-                "type": "OPEN_TEXT"
-            ]
-        ]
+        APIManager.shared.fetchNextQuestion { [weak self] response in
+            guard let self = self else { return }
 
-        let data = questions[testQuestionIndex % questions.count]
-        testQuestionIndex += 1
-
-        DispatchQueue.main.async {
-            self.processQuestion(data: data)
+            DispatchQueue.main.async {
+                if let response = response {
+                    self.processAPIQuestion(data: response)
+                } else {
+                    print(" API error, loading demo question")
+                    self.loadDemoQuestion()
+                }
+            }
         }
     }
 
-    private func processQuestion(data: [String: Any]) {
-        // UI reset
+    private func processAPIQuestion(data: [String: Any]) {
+        print(" API cavab gəldi:", data)
+
+
+        resetUI()
+
+
+        guard let questionData = data["data"] as? [String: Any] else {
+            print("❌ 'data' key tapılmadı")
+            loadDemoQuestion()
+            return
+        }
+
+        if let id = questionData["id"] as? String {
+            questionId = id
+            print("📝 Question ID:", questionId)
+        }
+
+
+        if let qText = questionData["questionText"] as? String, qText != "<null>" {
+            questionLabel.text = qText
+        } else {
+
+            questionLabel.text = "Answer the following questions."
+        }
+
+
+        let type = questionData["type"] as? String ?? "MULTIPLE_CHOICE"
+        print(" Question Type:", type)
+
+
+        if let imageUrl = questionData["imageUrl"] as? String, !imageUrl.isEmpty {
+            let fullImageUrl = "https://api.quizizo.com\(imageUrl)"
+            print("🖼️ Image URL:", fullImageUrl)
+            questionImageView.isHidden = false
+            loadImage(from: fullImageUrl)
+        }
+
+
+        if let options = questionData["options"] as? [[String: Any]] {
+            showOptionsFromAPI(options)
+        }
+
+
+        updateOptionButtonConstraints()
+        view.setNeedsLayout()
+        view.layoutIfNeeded()
+
+
+        countdown = 59
+        questionStartTime = Date()
+    }
+
+    private func showOptionsFromAPI(_ options: [[String: Any]]) {
+        print(" Options sayı:", options.count)
+
+        for (i, btn) in optionButtons.enumerated() {
+            if i < options.count {
+                let option = options[i]
+
+
+                var optionText = ""
+                if let text = option["text"] as? String {
+                    optionText = text
+                }
+
+                btn.isHidden = false
+                btn.setTitle(optionText, for: .normal)
+                btn.backgroundColor = .white
+                btn.setTitleColor(UIColor(red: 0.2, green: 0.2, blue: 0.3, alpha: 1.0), for: .normal)
+                btn.layer.borderColor = UIColor(red: 0x7C/255.0, green: 0x5E/255.0, blue: 0xF1/255.0, alpha: 0.3).cgColor
+            } else {
+                btn.isHidden = true
+            }
+        }
+    }
+
+    private func resetUI() {
         optionButtons.forEach {
             $0.isHidden = true
             $0.backgroundColor = .white
@@ -385,99 +436,84 @@ class QuizViewController: UIViewController {
         sendButton.isHidden = true
         questionImageView.isHidden = true
         questionImageView.image = nil
-
-        // Əvvəlki image constraint-lərini təmizlə
         questionImageView.constraints.forEach { $0.isActive = false }
-
-        // Sual mətni
-        if let qText = data["questionText"] as? String {
-            questionLabel.text = qText
-        }
-
-        // Sualın tipi
-        if let type = data["type"] as? String, type.uppercased() == "OPEN_TEXT" {
-            // 🔹 Açıq cavab
-            textAnswerView.isHidden = false
-            sendButton.isHidden = false
-        } else if let imageUrl = data["questionImage"] as? String, !imageUrl.isEmpty {
-            // 🔹 Şəkilli sual
-            questionImageView.isHidden = false
-            loadImage(from: imageUrl)
-            showOptions(from: data)
-        } else {
-            // 🔹 Normal variantlı sual
-            showOptions(from: data)
-        }
-
-        // Constraint-ləri yenilə
-        updateOptionButtonConstraints()
-
-        // Force layout update
-        view.setNeedsLayout()
-        view.layoutIfNeeded()
-
-        // Timer restart
-        countdown = 59
     }
 
-    private func showOptions(from data: [String: Any]) {
-        var optionsArray: [String] = []
-
-        if let opts = data["options"] as? [String] {
-            optionsArray = opts
-        }
-
-        for (i, btn) in optionButtons.enumerated() {
-            if i < optionsArray.count {
-                btn.isHidden = false
-                btn.setTitle(optionsArray[i], for: .normal)
-                btn.backgroundColor = .white
-                btn.setTitleColor(UIColor(red: 0.2, green: 0.2, blue: 0.3, alpha: 1.0), for: .normal)
-                btn.layer.borderColor = UIColor(red: 0x7C/255.0, green: 0x5E/255.0, blue: 0xF1/255.0, alpha: 0.3).cgColor
-            } else {
-                btn.isHidden = true
-            }
-        }
-
-        if let c = data["correctIndex"] as? Int {
-            correctAnswerIndex = c
-        }
+    private func loadDemoQuestion() {
+        let demoData: [String: Any] = [
+            "status": "success",
+            "data": [
+                "id": "demo-123",
+                "questionText": "Which of these landmarks is located in Rome?",
+                "type": "MULTIPLE_CHOICE",
+                "options": [
+                    ["text": "A) Eiffel Tower"],
+                    ["text": "B) Colosseum"],
+                    ["text": "C) Big Ben"],
+                    ["text": "D) Statue of Liberty"]
+                ]
+            ]
+        ]
+        processAPIQuestion(data: demoData)
     }
 
     private func loadImage(from urlString: String) {
-        print("🖼️ Loading image from: \(urlString)")
+        print(" Loading image from: \(urlString)")
         guard let url = URL(string: urlString) else {
             print("❌ Invalid URL")
             return
         }
 
-        // Placeholder göstər
         questionImageView.backgroundColor = UIColor(red: 0xF2/255.0, green: 0xE8/255.0, blue: 0xF2/255.0, alpha: 1.0)
 
         URLSession.shared.dataTask(with: url) { [weak self] data, response, error in
             if let error = error {
-                print("❌ Image load error: \(error)")
+                print(" Image load error: \(error)")
                 return
             }
 
             guard let data = data, let image = UIImage(data: data) else {
-                print("❌ Could not create image from data")
+                print(" Could not create image from data")
                 return
             }
 
             DispatchQueue.main.async {
-                print("✅ Image loaded successfully")
+                print(" Image loaded successfully")
                 self?.questionImageView.image = image
                 self?.questionImageView.backgroundColor = .clear
             }
         }.resume()
     }
 
+    private func sendAnswer(selectedIndex: Int) {
+        guard !questionId.isEmpty else {
+            print(" Question ID yoxdur")
+            loadNextQuestion()
+            return
+        }
+
+        let duration = Int(Date().timeIntervalSince(questionStartTime ?? Date()))
+
+        print("📤 Cavab göndərilir:")
+        print("  - Question ID: \(questionId)")
+        print("  - Selected Index: \(selectedIndex)")
+        print("  - Duration: \(duration)s")
+
+        APIManager.shared.sendAnswer(questionId: questionId, selectedIndex: selectedIndex, duration: duration) { [weak self] isCorrect in
+            DispatchQueue.main.async {
+                print(isCorrect ? " Düzgün cavab!" : " Səhv cavab!")
+
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                    self?.loadNextQuestion()
+                }
+            }
+        }
+    }
+
     @objc private func sendTextAnswer() {
         let answerText = textAnswerView.text ?? ""
         print("📤 Open answer:", answerText)
 
-        // Vizual feedback
         sendButton.alpha = 0.5
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             self.sendButton.alpha = 1.0
@@ -489,17 +525,15 @@ class QuizViewController: UIViewController {
         let index = sender.tag
         selectOption(at: index)
 
+        timer?.invalidate()
+
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            let isCorrect = (index == self.correctAnswerIndex)
-            sender.backgroundColor = isCorrect ? .systemGreen : .systemRed
 
-            if !isCorrect && self.correctAnswerIndex >= 0 {
-                self.optionButtons[self.correctAnswerIndex].backgroundColor = .systemGreen
-            }
+            sender.backgroundColor = UIColor(red: 0x7C/255.0, green: 0x5E/255.0, blue: 0xF1/255.0, alpha: 1.0)
+            sender.setTitleColor(.white, for: .normal)
 
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                self.loadNextQuestion()
-            }
+
+            self.sendAnswer(selectedIndex: index)
         }
     }
 

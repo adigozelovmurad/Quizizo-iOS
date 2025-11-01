@@ -23,10 +23,14 @@ class HomeViewController: UIViewController {
     private let bottomNavView = UIView()
 
 
-    var userName: String = "Madina Omar"
+    var userName: String = "User"
     var userEmail: String = ""
-    var userXP: Int = 3900
+    var userXP: Int = 0
     var profileImageURL: String?
+
+    private var worldRank: Int = 0
+    private var localRank: Int = 0
+    private var totalScore: Int = 0
 
 
     override func viewDidLoad() {
@@ -36,8 +40,59 @@ class HomeViewController: UIViewController {
         setupUI()
         setupConstraints()
         loadUserData()
-    }
 
+        fetchUserProfile()
+        fetchUserStats()
+
+
+        func fetchUserProfile() {
+
+            APIManager.shared.fetchUserProfile { [weak self] json in
+                guard let self = self else { return }
+                DispatchQueue.main.async {
+                    if let data = json?["data"] as? [String: Any] {
+                        self.userName = data["name"] as? String ?? "User"
+                        self.userXP = data["xp"] as? Int ?? 0
+                        self.profileImageURL = data["profilePicture"] as? String
+                        self.updateUI()
+                    }
+                }
+            }
+
+        }
+    }
+    private func fetchUserStats() {
+        APIManager.shared.fetchUserStats { [weak self] json in
+            guard let self = self else { return }
+            DispatchQueue.main.async {
+                if let data = json?["data"] as? [String: Any] {
+                    self.worldRank = data["worldRank"] as? Int ?? 0
+                    self.localRank = data["localRank"] as? Int ?? 0
+                    self.totalScore = data["totalScore"] as? Int ?? 0
+                    self.updateStatsUI()
+                }
+            }
+        }
+    }
+    private func updateStatsUI() {
+            // StatsCardView altındakı stack-ları tapırıq və text-ləri yeniləyirik
+            for view in statsCardView.subviews {
+                if let stack = view as? UIStackView {
+                    for case let label as UILabel in stack.arrangedSubviews {
+                        switch label.text {
+                        case "#1,438": label.text = "#\(worldRank)"
+                        case "590": label.text = "\(totalScore)"
+                        case "#56": label.text = "#\(localRank)"
+                        default: break
+                        }
+                    }
+                }
+            }
+        }
+
+
+
+    
 
     private func setupGradientBackground() {
         let gradientLayer = CAGradientLayer()
@@ -505,7 +560,7 @@ class HomeViewController: UIViewController {
 
 
     @objc private func playButtonTapped() {
-        print("🎮 Play button tapped")
+        print(" Play button tapped")
         let quizVC = QuizViewController()
         quizVC.modalPresentationStyle = .fullScreen
         quizVC.modalTransitionStyle = .crossDissolve
@@ -513,7 +568,7 @@ class HomeViewController: UIViewController {
     }
 
     @objc private func leaderboardTapped() {
-        print("🏆 Leaderboard button tapped")
+        print(" Leaderboard button tapped")
         let leaderboardVC = LeaderboardViewController()
         leaderboardVC.modalPresentationStyle = UIModalPresentationStyle.fullScreen
         leaderboardVC.modalTransitionStyle = UIModalTransitionStyle.crossDissolve
@@ -545,6 +600,22 @@ class HomeViewController: UIViewController {
             }
         }.resume()
     }
+
+    func updateUI() {
+        nameLabel.text = userName
+        xpLabel.text = "\(userXP) XP"
+
+        if let urlString = profileImageURL, let url = URL(string: urlString) {
+            URLSession.shared.dataTask(with: url) { data, _, _ in
+                if let data = data {
+                    DispatchQueue.main.async {
+                        self.profileImageView.image = UIImage(data: data)
+                    }
+                }
+            }.resume()
+        }
+    }
+
 
     private func setDefaultAvatar() {
         let initials = String(userName.prefix(2)).uppercased()

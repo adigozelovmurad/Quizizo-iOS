@@ -7,7 +7,6 @@
 
 import UIKit
 
-
 class LeaderboardViewController: UIViewController {
 
     // MARK: - Properties
@@ -16,17 +15,12 @@ class LeaderboardViewController: UIViewController {
     private let bottomNavView = UIView()
     private let activityIndicator = UIActivityIndicatorView(style: .large)
 
-
     private let backgroundRectangle = UIImageView()
-
-
     private let ellipseImageView = UIImageView()
-
 
     private var leaderboardData: [LeaderboardEntry] = []
     private var currentPage = 1
     private let pageLimit = 50
-
 
     private let useDemoMode = false
 
@@ -87,17 +81,15 @@ class LeaderboardViewController: UIViewController {
         ])
     }
 
-    // MARK: - Rectangle Background (YENİ FUNKSİYA)
+    // MARK: - Rectangle Background
     private func setupRectangleBackground() {
         backgroundRectangle.image = UIImage(named: "Rectangle")
         backgroundRectangle.contentMode = .scaleAspectFill
         backgroundRectangle.translatesAutoresizingMaskIntoConstraints = false
-
-
         view.insertSubview(backgroundRectangle, at: 3)
     }
 
-    // MARK: - Ellipse (Figmada göstərilən yerdə)
+    // MARK: - Ellipse
     private func setupEllipse() {
         ellipseImageView.image = UIImage(named: "Ellipse")
         ellipseImageView.contentMode = .scaleAspectFit
@@ -195,26 +187,21 @@ class LeaderboardViewController: UIViewController {
 
     // MARK: - Constraints
     private func setupConstraints() {
-
-        // YENİ: backgroundRectangle üçün constraints
         NSLayoutConstraint.activate([
             backgroundRectangle.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 26),
             backgroundRectangle.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -26),
             backgroundRectangle.topAnchor.constraint(equalTo: view.topAnchor, constant: 315),
             backgroundRectangle.bottomAnchor.constraint(equalTo: bottomNavView.topAnchor),
 
-
             ellipseImageView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             ellipseImageView.topAnchor.constraint(equalTo: segmentedControl.bottomAnchor, constant: 57),
             ellipseImageView.widthAnchor.constraint(equalToConstant: 8),
             ellipseImageView.heightAnchor.constraint(equalToConstant: 8),
 
-
             segmentedControl.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
             segmentedControl.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             segmentedControl.widthAnchor.constraint(equalToConstant: 313),
             segmentedControl.heightAnchor.constraint(equalToConstant: 50),
-
 
             tableView.topAnchor.constraint(equalTo: segmentedControl.bottomAnchor, constant: 60),
             tableView.leadingAnchor.constraint(equalTo: backgroundRectangle.leadingAnchor, constant: 24),
@@ -233,96 +220,51 @@ class LeaderboardViewController: UIViewController {
 
     // MARK: - API Request
     private func fetchLeaderboard() {
-        guard let token = KeychainManager.read(key: "authToken") else {
+        guard KeychainManager.read(key: "authToken") != nil else {
             print("❌ Token tapılmadı")
             loadDemoData()
             return
         }
 
-        print("🔑 Token:", token.prefix(50))
         activityIndicator.startAnimating()
 
-        let urlString = "https://api.quizizo.com/leaderboard?page=\(currentPage)&limit=\(pageLimit)"
-        guard let url = URL(string: urlString) else { return }
-
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue("tr", forHTTPHeaderField: "Accept-Language")
-
-        print("📡 Request URL:", urlString)
-
-        URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
+        APIManager.shared.fetchLeaderboard(page: currentPage, limit: pageLimit) { [weak self] response in
             DispatchQueue.main.async {
                 self?.activityIndicator.stopAnimating()
-            }
 
-            if let error = error {
-                print("❌ API Error:", error.localizedDescription)
-                print("⚠️ Using demo data instead")
-                self?.loadDemoData()
-                return
-            }
-
-            if let httpResponse = response as? HTTPURLResponse {
-                print("📊 Status Code:", httpResponse.statusCode)
-
-                if httpResponse.statusCode == 401 || httpResponse.statusCode == 400 {
-                    print("⚠️ Backend error (\(httpResponse.statusCode)), using demo data")
+                guard let response = response else {
+                    print("⚠️ API failed, using demo data")
                     self?.loadDemoData()
                     return
                 }
+
+                let leaders = response.data.leaders
+
+                self?.leaderboardData = leaders
+                self?.tableView.reloadData()
+                print("✅ Leaderboard data loaded: \(leaders.count) entries")
             }
-
-            guard let data = data else {
-                print("❌ Data yoxdur")
-                self?.loadDemoData()
-                return
-            }
-
-            if let jsonString = String(data: data, encoding: .utf8) {
-                print("✅ API Response:", jsonString)
-            }
-
-            do {
-                let decoder = JSONDecoder()
-                let response = try decoder.decode(LeaderboardResponse.self, from: data)
-
-                print("✅ Parsed Data Count:", response.data.count)
-
-                DispatchQueue.main.async {
-                    self?.leaderboardData = response.data
-                    self?.tableView.reloadData()
-                    print("✅ TableView reload edildi. Row count:", self?.leaderboardData.count ?? 0)
-                }
-            } catch {
-                print("❌ JSON Parse Error:", error)
-                print("⚠️ Using demo data instead")
-                self?.loadDemoData()
-            }
-        }.resume()
+        }
     }
 
-    // ⚠️ DEMO MODE
-
+    // MARK: - Demo Data
     private func loadDemoData() {
         let demoData: [LeaderboardEntry] = [
-            LeaderboardEntry(rank: 1, userId: "1", name: "Davis Curtis", score: 2569, country: "CA", countryFlag: "🇨🇦", profileImage: nil),
-            LeaderboardEntry(rank: 2, userId: "2", name: "Alena Donin", score: 1469, country: "FR", countryFlag: "🇫🇷", profileImage: nil),
-            LeaderboardEntry(rank: 3, userId: "3", name: "Craig Gouse", score: 1053, country: "CA", countryFlag: "🇨🇦", profileImage: nil),
-            LeaderboardEntry(rank: 4, userId: "4", name: "Madelyn Dias", score: 590, country: "US", countryFlag: "🇺🇸", profileImage: nil),
-            LeaderboardEntry(rank: 5, userId: "5", name: "Zain Vaccaro", score: 448, country: "CA", countryFlag: "🇨🇦", profileImage: nil),
-            LeaderboardEntry(rank: 6, userId: "6", name: "Murad Adıgözəlov", score: 3900, country: "AZ", countryFlag: "🇦🇿", profileImage: nil),
-            LeaderboardEntry(rank: 7, userId: "7", name: "John Smith", score: 387, country: "GB", countryFlag: "🇬🇧", profileImage: nil),
-            LeaderboardEntry(rank: 8, userId: "8", name: "Maria Garcia", score: 356, country: "ES", countryFlag: "🇪🇸", profileImage: nil),
-            LeaderboardEntry(rank: 9, userId: "9", name: "Ali Məmmədov", score: 298, country: "AZ", countryFlag: "🇦🇿", profileImage: nil),
-            LeaderboardEntry(rank: 10, userId: "10", name: "Emma Wilson", score: 267, country: "US", countryFlag: "🇺🇸", profileImage: nil)
+            LeaderboardEntry(userId: "1", name: "Davis Curtis", score: 2569, rank: "🎖️ General", rankPosition: 1, country: "CA", profilePicture: nil),
+            LeaderboardEntry(userId: "2", name: "Alena Donin", score: 1469, rank: "🪖 Colonel", rankPosition: 2, country: "FR", profilePicture: nil),
+            LeaderboardEntry(userId: "3", name: "Craig Gouse", score: 1053, rank: "🎯 Captain", rankPosition: 3, country: "CA", profilePicture: nil),
+            LeaderboardEntry(userId: "4", name: "Madelyn Dias", score: 590, rank: "📘 Lieutenant", rankPosition: 4, country: "US", profilePicture: nil),
+            LeaderboardEntry(userId: "5", name: "Zain Vaccaro", score: 448, rank: "🎯 Recruit", rankPosition: 5, country: "CA", profilePicture: nil),
+            LeaderboardEntry(userId: "6", name: "Murad Adıgözəlov", score: 3900, rank: "🎖️ Marshal", rankPosition: 6, country: "AZ", profilePicture: nil),
+            LeaderboardEntry(userId: "7", name: "John Smith", score: 387, rank: "📘 Observer", rankPosition: 7, country: "GB", profilePicture: nil),
+            LeaderboardEntry(userId: "8", name: "Maria Garcia", score: 356, rank: "💤 Sleeping Soldier", rankPosition: 8, country: "ES", profilePicture: nil),
+            LeaderboardEntry(userId: "9", name: "Ali Məmmədov", score: 298, rank: "💤 Sleeping Soldier", rankPosition: 9, country: "AZ", profilePicture: nil),
+            LeaderboardEntry(userId: "10", name: "Emma Wilson", score: 267, rank: "💤 Sleeping Soldier", rankPosition: 10, country: "US", profilePicture: nil)
         ]
 
-        DispatchQueue.main.async { [weak self] in
-            self?.leaderboardData = demoData
-            self?.tableView.reloadData()
+        DispatchQueue.main.async {
+            self.leaderboardData = demoData
+            self.tableView.reloadData()
             print("✅ Demo data loaded: \(demoData.count) entries")
         }
     }
@@ -350,14 +292,14 @@ extension LeaderboardViewController: UITableViewDelegate, UITableViewDataSource 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "LeaderboardCell", for: indexPath) as! LeaderboardCell
         let entry = leaderboardData[indexPath.row]
-        let isTopRank = entry.rank <= 3
+        let isTopRank = entry.rankPosition <= 3
         cell.configure(
-            rank: entry.rank,
+            rank: entry.rankPosition,
             name: entry.name,
             points: String(entry.score),
             flag: entry.countryFlag,
             isTopRank: isTopRank,
-            profileImage: entry.profileImage
+            profileImage: entry.profilePicture
         )
         return cell
     }
@@ -367,26 +309,10 @@ extension LeaderboardViewController: UITableViewDelegate, UITableViewDataSource 
     }
 }
 
-// MARK: - Data Models
-struct LeaderboardResponse: Codable {
-    let data: [LeaderboardEntry]
-}
-
-struct LeaderboardEntry: Codable {
-    let rank: Int
-    let userId: String
-    let name: String
-    let score: Int
-    let country: String
-    let countryFlag: String
-    let profileImage: String?
-
-}
-
-// MARK: - Custom Cell (Figma Design)
+// MARK: - Custom Cell
 class LeaderboardCell: UITableViewCell {
     private let containerView = UIView()
-    private let rankImageView = UIImageView() 
+    private let rankImageView = UIImageView()
     private let avatarImageView = UIImageView()
     private let nameLabel = UILabel()
     private let pointsLabel = UILabel()
@@ -411,11 +337,9 @@ class LeaderboardCell: UITableViewCell {
         containerView.backgroundColor = .white
         containerView.layer.cornerRadius = 20
 
-
         rankImageView.contentMode = .scaleAspectFit
         rankImageView.translatesAutoresizingMaskIntoConstraints = false
         rankImageView.tintColor = UIColor(red: 0.0, green: 0.0, blue: 0.0, alpha: 0.2)
-
 
         avatarImageView.layer.cornerRadius = 22
         avatarImageView.clipsToBounds = true
@@ -426,16 +350,14 @@ class LeaderboardCell: UITableViewCell {
         nameLabel.textColor = UIColor(red: 0.1, green: 0.1, blue: 0.2, alpha: 1.0)
         nameLabel.translatesAutoresizingMaskIntoConstraints = false
 
-
         pointsLabel.font = UIFont.systemFont(ofSize: 13, weight: .regular)
         pointsLabel.textColor = UIColor(red: 0.5, green: 0.5, blue: 0.6, alpha: 1.0)
         pointsLabel.translatesAutoresizingMaskIntoConstraints = false
 
-                flagImageView.contentMode = .scaleAspectFit
+        flagImageView.contentMode = .scaleAspectFit
         flagImageView.translatesAutoresizingMaskIntoConstraints = false
         flagImageView.layer.cornerRadius = 0
         flagImageView.clipsToBounds = true
-
 
         medalImageView.contentMode = .scaleAspectFit
         medalImageView.translatesAutoresizingMaskIntoConstraints = false
@@ -448,39 +370,32 @@ class LeaderboardCell: UITableViewCell {
         containerView.addSubview(medalImageView)
 
         NSLayoutConstraint.activate([
-
             containerView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 20),
             containerView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: 14),
             containerView.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
             containerView.widthAnchor.constraint(equalToConstant: 285),
             containerView.heightAnchor.constraint(equalToConstant: 62),
 
-
             rankImageView.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 16),
             rankImageView.centerYAnchor.constraint(equalTo: containerView.centerYAnchor),
             rankImageView.widthAnchor.constraint(equalToConstant: 24),
             rankImageView.heightAnchor.constraint(equalToConstant: 24),
-
 
             avatarImageView.leadingAnchor.constraint(equalTo: rankImageView.trailingAnchor, constant: 12),
             avatarImageView.topAnchor.constraint(equalTo: containerView.topAnchor, constant: 12),
             avatarImageView.widthAnchor.constraint(equalToConstant: 48),
             avatarImageView.heightAnchor.constraint(equalToConstant: 48),
 
-
             flagImageView.trailingAnchor.constraint(equalTo: avatarImageView.trailingAnchor, constant: 2),
             flagImageView.bottomAnchor.constraint(equalTo: avatarImageView.bottomAnchor, constant: 2),
             flagImageView.widthAnchor.constraint(equalToConstant: 20),
             flagImageView.heightAnchor.constraint(equalToConstant: 20),
 
-
             nameLabel.leadingAnchor.constraint(equalTo: avatarImageView.trailingAnchor, constant: 12),
             nameLabel.topAnchor.constraint(equalTo: containerView.topAnchor, constant: 18),
 
-
             pointsLabel.leadingAnchor.constraint(equalTo: avatarImageView.trailingAnchor, constant: 12),
             pointsLabel.topAnchor.constraint(equalTo: nameLabel.bottomAnchor, constant: 4),
-
 
             medalImageView.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -16),
             medalImageView.centerYAnchor.constraint(equalTo: containerView.centerYAnchor),
@@ -490,33 +405,37 @@ class LeaderboardCell: UITableViewCell {
     }
 
     func configure(rank: Int, name: String, points: String, flag: String, isTopRank: Bool, profileImage: String?) {
-        // SF Symbol ilə rank göstər
         let config = UIImage.SymbolConfiguration(pointSize: 20, weight: .medium)
         rankImageView.image = UIImage(systemName: "\(rank).circle", withConfiguration: config)
 
         nameLabel.text = name
         pointsLabel.text = "\(points) points"
 
+        let flagLabel = UILabel()
+        flagLabel.text = flag
+        flagLabel.font = UIFont.systemFont(ofSize: 16)
+        flagLabel.sizeToFit()
 
-        flagImageView.image = UIImage(named: "Portugal")
-        // Medal dizaynı
+        UIGraphicsBeginImageContextWithOptions(flagLabel.bounds.size, false, 0)
+        flagLabel.layer.render(in: UIGraphicsGetCurrentContext()!)
+        let flagImage = UIGraphicsGetImageFromCurrentImageContext()
+        UIGraphicsEndImageContext()
+
+        flagImageView.image = flagImage
+
         if isTopRank {
             if rank == 1 {
                 medalImageView.image = UIImage(named: "Medal_1")
-                medalImageView.tintColor = nil
             } else if rank == 2 {
                 medalImageView.image = UIImage(named: "Medal_2")
-                medalImageView.tintColor = nil
             } else if rank == 3 {
                 medalImageView.image = UIImage(named: "Medal_3")
-                medalImageView.tintColor = nil
             }
             medalImageView.isHidden = false
         } else {
             medalImageView.isHidden = true
         }
 
-        // Avatar
         if let imageURL = profileImage, let url = URL(string: imageURL) {
             loadImage(from: url)
         } else {
