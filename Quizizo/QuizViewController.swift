@@ -18,7 +18,7 @@ class QuizViewController: UIViewController {
     private let timerLabel = UILabel()
     private let questionCardView = UIView()
     private let questionLabel = UILabel()
-    private let optionButtons: [UIButton] = (0..<4).map { _ in UIButton() }
+    private let optionButtons: [UIButton] = (0..<5).map { _ in UIButton() }
 
     private var questionId: String = ""
     private var correctAnswerIndex: Int = -1
@@ -28,6 +28,9 @@ class QuizViewController: UIViewController {
     private var questionStartTime: Date?
 
     private var optionButtonTopConstraints: [NSLayoutConstraint] = []
+
+    // Callback - quiz bağlananda çağrılır
+    var onDismiss: (() -> Void)?
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -331,9 +334,9 @@ class QuizViewController: UIViewController {
         sendAnswer(selectedIndex: -1)
     }
 
-
+    // MARK: - API Integration
     func loadNextQuestion() {
-        print(" Yeni sual yüklənir...")
+        print("📡 Yeni sual yüklənir...")
 
         APIManager.shared.fetchNextQuestion { [weak self] response in
             guard let self = self else { return }
@@ -342,7 +345,7 @@ class QuizViewController: UIViewController {
                 if let response = response {
                     self.processAPIQuestion(data: response)
                 } else {
-                    print(" API error, loading demo question")
+                    print("❌ API error, loading demo question")
                     self.loadDemoQuestion()
                 }
             }
@@ -350,36 +353,37 @@ class QuizViewController: UIViewController {
     }
 
     private func processAPIQuestion(data: [String: Any]) {
-        print(" API cavab gəldi:", data)
+        print("✅ API cavab gəldi:", data)
 
-
+        // Reset UI
         resetUI()
 
-
+        // Backend data strukturu: data -> içində məlumatlar
         guard let questionData = data["data"] as? [String: Any] else {
             print("❌ 'data' key tapılmadı")
             loadDemoQuestion()
             return
         }
 
+        // Question ID
         if let id = questionData["id"] as? String {
             questionId = id
             print("📝 Question ID:", questionId)
         }
 
-
+        // Question text
         if let qText = questionData["questionText"] as? String, qText != "<null>" {
             questionLabel.text = qText
         } else {
-
-            questionLabel.text = "Answer the following questions."
+            // Şəkil varsa, sual mətni yoxdursa boş qoy
+            questionLabel.text = ""
         }
 
-
+        // Question type
         let type = questionData["type"] as? String ?? "MULTIPLE_CHOICE"
-        print(" Question Type:", type)
+        print("📋 Question Type:", type)
 
-
+        // Question image URL (backend "/images/..." qaytarır)
         if let imageUrl = questionData["imageUrl"] as? String, !imageUrl.isEmpty {
             let fullImageUrl = "https://api.quizizo.com\(imageUrl)"
             print("🖼️ Image URL:", fullImageUrl)
@@ -387,29 +391,29 @@ class QuizViewController: UIViewController {
             loadImage(from: fullImageUrl)
         }
 
-
+        // Options (backend "options" array ilə göndərir)
         if let options = questionData["options"] as? [[String: Any]] {
             showOptionsFromAPI(options)
         }
 
-
+        // Update constraints
         updateOptionButtonConstraints()
         view.setNeedsLayout()
         view.layoutIfNeeded()
 
-
+        // Restart timer
         countdown = 59
         questionStartTime = Date()
     }
 
     private func showOptionsFromAPI(_ options: [[String: Any]]) {
-        print(" Options sayı:", options.count)
+        print("🔢 Options sayı:", options.count)
 
         for (i, btn) in optionButtons.enumerated() {
             if i < options.count {
                 let option = options[i]
 
-
+                // Backend "text" key ilə göndərir
                 var optionText = ""
                 if let text = option["text"] as? String {
                     optionText = text
@@ -430,6 +434,7 @@ class QuizViewController: UIViewController {
         optionButtons.forEach {
             $0.isHidden = true
             $0.backgroundColor = .white
+            $0.isUserInteractionEnabled = true
         }
         textAnswerView.isHidden = true
         textAnswerView.text = ""
@@ -458,7 +463,7 @@ class QuizViewController: UIViewController {
     }
 
     private func loadImage(from urlString: String) {
-        print(" Loading image from: \(urlString)")
+        print("🖼️ Loading image from: \(urlString)")
         guard let url = URL(string: urlString) else {
             print("❌ Invalid URL")
             return
@@ -468,17 +473,17 @@ class QuizViewController: UIViewController {
 
         URLSession.shared.dataTask(with: url) { [weak self] data, response, error in
             if let error = error {
-                print(" Image load error: \(error)")
+                print("❌ Image load error: \(error)")
                 return
             }
 
             guard let data = data, let image = UIImage(data: data) else {
-                print(" Could not create image from data")
+                print("❌ Could not create image from data")
                 return
             }
 
             DispatchQueue.main.async {
-                print(" Image loaded successfully")
+                print("✅ Image loaded successfully")
                 self?.questionImageView.image = image
                 self?.questionImageView.backgroundColor = .clear
             }
@@ -487,7 +492,7 @@ class QuizViewController: UIViewController {
 
     private func sendAnswer(selectedIndex: Int) {
         guard !questionId.isEmpty else {
-            print(" Question ID yoxdur")
+            print("❌ Question ID yoxdur")
             loadNextQuestion()
             return
         }
@@ -499,9 +504,18 @@ class QuizViewController: UIViewController {
         print("  - Selected Index: \(selectedIndex)")
         print("  - Duration: \(duration)s")
 
+        // Seçilmiş buttonu saxla
+        let selectedButton = selectedIndex >= 0 ? optionButtons[selectedIndex] : nil
+
         APIManager.shared.sendAnswer(questionId: questionId, selectedIndex: selectedIndex, duration: duration) { [weak self] isCorrect in
             DispatchQueue.main.async {
-                print(isCorrect ? " Düzgün cavab!" : " Səhv cavab!")
+                print(isCorrect ? "✅ Düzgün cavab!" : "❌ Səhv cavab!")
+
+                // Vizual feedback
+                if let button = selectedButton {
+                    button.backgroundColor = isCorrect ? .systemGreen : .systemRed
+                    button.setTitleColor(.white, for: .normal)
+                }
 
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
                     self?.loadNextQuestion()
@@ -525,14 +539,21 @@ class QuizViewController: UIViewController {
         let index = sender.tag
         selectOption(at: index)
 
+        // Timer dayandır
         timer?.invalidate()
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+        // Buttonları disable et (double tap önləmək üçün)
+        optionButtons.forEach { $0.isUserInteractionEnabled = false }
 
-            sender.backgroundColor = UIColor(red: 0x7C/255.0, green: 0x5E/255.0, blue: 0xF1/255.0, alpha: 1.0)
-            sender.setTitleColor(.white, for: .normal)
+        // Animasiya ilə seçim göstər
+        UIView.animate(withDuration: 0.2) {
+            sender.transform = CGAffineTransform(scaleX: 0.95, y: 0.95)
+        } completion: { _ in
+            UIView.animate(withDuration: 0.2) {
+                sender.transform = .identity
+            }
 
-
+            // Backend-ə cavab göndər
             self.sendAnswer(selectedIndex: index)
         }
     }

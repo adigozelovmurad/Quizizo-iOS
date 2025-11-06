@@ -9,7 +9,6 @@ import UIKit
 
 class HomeViewController: UIViewController {
 
-
     private let nameLabel = UILabel()
     private let xpContainerView = UIView()
     private let xpIconImageView = UIImageView()
@@ -22,16 +21,30 @@ class HomeViewController: UIViewController {
     private let playButton = UIButton()
     private let bottomNavView = UIView()
 
-
     var userName: String = "User"
     var userEmail: String = ""
     var userXP: Int = 0
     var profileImageURL: String?
 
+    // Stats data
     private var worldRank: Int = 0
     private var localRank: Int = 0
     private var totalScore: Int = 0
+    private var correctAnswers: Int = 0
+    private var wrongAnswers: Int = 0
+    private var totalQuestions: Int = 0
+    private var averageTime: Double = 0.0
+    private var totalTime: Double = 0.0
 
+    // UI references
+    private var worldRankLabel: UILabel?
+    private var scoreLabel: UILabel?
+    private var localRankLabel: UILabel?
+    private var trueLabel: UILabel?
+    private var totalGameLabel: UILabel?
+    private var falseLabel: UILabel?
+    private var avgTimeLabel: UILabel?
+    private var totalTimeLabel: UILabel?
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -39,60 +52,115 @@ class HomeViewController: UIViewController {
         addBackgroundOvals()
         setupUI()
         setupConstraints()
-        loadUserData()
 
+        // İlk yüklənmədə data çək
         fetchUserProfile()
         fetchUserStats()
-
-
-        func fetchUserProfile() {
-
-            APIManager.shared.fetchUserProfile { [weak self] json in
-                guard let self = self else { return }
-                DispatchQueue.main.async {
-                    if let data = json?["data"] as? [String: Any] {
-                        self.userName = data["name"] as? String ?? "User"
-                        self.userXP = data["xp"] as? Int ?? 0
-                        self.profileImageURL = data["profilePicture"] as? String
-                        self.updateUI()
-                    }
-                }
-            }
-
-        }
     }
-    private func fetchUserStats() {
-        APIManager.shared.fetchUserStats { [weak self] json in
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+
+        // Hər dəfə ekrana qayıdanda yenilə
+        print("🔄 Home screen appeared - refreshing data...")
+        fetchUserProfile()
+        fetchUserStats()
+    }
+
+    private func fetchUserProfile() {
+        APIManager.shared.fetchUserProfile { [weak self] json in
             guard let self = self else { return }
             DispatchQueue.main.async {
                 if let data = json?["data"] as? [String: Any] {
-                    self.worldRank = data["worldRank"] as? Int ?? 0
-                    self.localRank = data["localRank"] as? Int ?? 0
-                    self.totalScore = data["totalScore"] as? Int ?? 0
-                    self.updateStatsUI()
+                    self.userName = data["name"] as? String ?? "User"
+                    self.profileImageURL = data["profilePicture"] as? String
+                    self.updateProfileUI()
                 }
             }
         }
     }
-    private func updateStatsUI() {
-            // StatsCardView altındakı stack-ları tapırıq və text-ləri yeniləyirik
-            for view in statsCardView.subviews {
-                if let stack = view as? UIStackView {
-                    for case let label as UILabel in stack.arrangedSubviews {
-                        switch label.text {
-                        case "#1,438": label.text = "#\(worldRank)"
-                        case "590": label.text = "\(totalScore)"
-                        case "#56": label.text = "#\(localRank)"
-                        default: break
-                        }
+
+    private func fetchUserStats() {
+        APIManager.shared.fetchUserStats { [weak self] json in
+            guard let self = self else { return }
+
+            print("📊 User Stats API Response:", json ?? "nil")
+
+            DispatchQueue.main.async {
+                if let data = json?["data"] as? [String: Any] {
+                    print("📦 Stats data keys:", data.keys)
+
+                    // ✅ Backend uyğun key-lərlə
+                    self.worldRank = data["globalRankPosition"] as? Int ?? 0
+                    self.localRank = data["localRankPosition"] as? Int ?? 0
+                    self.totalScore = data["score"] as? Int ?? 0
+
+                    self.correctAnswers = data["correctCount"] as? Int ?? 0
+                    self.wrongAnswers = data["wrongCount"] as? Int ?? 0
+
+                    // Total question = doğru + yanlış (backend-də ayrıca gəlmir)
+                    self.totalQuestions = self.correctAnswers + self.wrongAnswers
+
+                    if let avg = data["averageDuration"] {
+                        self.averageTime = Double("\(avg)") ?? 0.0
                     }
+                    if let total = data["totalDuration"] {
+                        self.totalTime = Double("\(total)") ?? 0.0
+                    }
+
+                    self.userXP = data["xp"] as? Int ?? 0
+
+                    print("""
+                    🧾 Stats Parsed:
+                    - World Rank: \(self.worldRank)
+                    - Local Rank: \(self.localRank)
+                    - Score: \(self.totalScore)
+                    - Correct: \(self.correctAnswers)
+                    - Wrong: \(self.wrongAnswers)
+                    - Total Q: \(self.totalQuestions)
+                    - Avg Time: \(self.averageTime)
+                    - Total Time: \(self.totalTime)
+                    - XP: \(self.userXP)
+                    """)
+
+                    self.updateStatsUI()
+                } else {
+                    print("❌ 'data' key not found in response")
                 }
             }
         }
+    }
 
 
+    private func updateProfileUI() {
+        nameLabel.text = userName
+        xpLabel.text = "XP \(userXP)"
 
-    
+        if let imageURL = profileImageURL, let url = URL(string: imageURL) {
+            loadImage(from: url)
+        } else {
+            setDefaultAvatar()
+        }
+    }
+
+    private func updateStatsUI() {
+        // Update XP
+        xpLabel.text = "XP \(userXP)"
+
+        // Stats Card
+        worldRankLabel?.text = "#\(worldRank)"
+        scoreLabel?.text = "\(totalScore)"
+        localRankLabel?.text = "#\(localRank)"
+
+        // Performance Card
+        trueLabel?.text = "\(correctAnswers)"
+        totalGameLabel?.text = "\(totalQuestions)"
+        falseLabel?.text = "\(wrongAnswers)"
+
+        // Time Cards
+        avgTimeLabel?.text = String(format: "%.2f", averageTime)
+        totalTimeLabel?.text = String(format: "%.2f", totalTime)
+    }
 
     private func setupGradientBackground() {
         let gradientLayer = CAGradientLayer()
@@ -105,7 +173,6 @@ class HomeViewController: UIViewController {
         gradientLayer.frame = view.bounds
         view.layer.insertSublayer(gradientLayer, at: 0)
     }
-
 
     private func addBackgroundOvals() {
         let oval1 = UIImageView(image: UIImage(named: "Oval2"))
@@ -131,7 +198,6 @@ class HomeViewController: UIViewController {
         ])
     }
 
-
     private func setupUI() {
         setupHeader()
         setupStatsCard()
@@ -142,31 +208,25 @@ class HomeViewController: UIViewController {
     }
 
     private func setupHeader() {
-
         view.addSubview(nameLabel)
         nameLabel.translatesAutoresizingMaskIntoConstraints = false
         nameLabel.font = UIFont.systemFont(ofSize: 24, weight: .bold)
         nameLabel.textColor = .white
         nameLabel.text = userName
 
-
         view.addSubview(xpContainerView)
         xpContainerView.translatesAutoresizingMaskIntoConstraints = false
-
-
 
         xpContainerView.addSubview(xpIconImageView)
         xpIconImageView.translatesAutoresizingMaskIntoConstraints = false
         xpIconImageView.image = UIImage(named: "Xp")
         xpIconImageView.contentMode = .scaleAspectFit
 
-
         xpContainerView.addSubview(xpLabel)
         xpLabel.translatesAutoresizingMaskIntoConstraints = false
         xpLabel.font = UIFont.systemFont(ofSize: 16, weight: .bold)
         xpLabel.textColor = .white
         xpLabel.text = "XP \(userXP)"
-
 
         view.addSubview(profileImageView)
         profileImageView.translatesAutoresizingMaskIntoConstraints = false
@@ -182,11 +242,15 @@ class HomeViewController: UIViewController {
         statsCardView.backgroundColor = .white
         statsCardView.layer.cornerRadius = 28
 
-        let worldStack = createStatsColumn(imageName: "World", title: "WORLD RANK", value: "#1,438")
+        let (worldStack, worldLabel) = createStatsColumn(imageName: "World", title: "WORLD RANK", value: "#\(worldRank)")
         let divider1 = createDivider()
-        let scoreStack = createStatsColumn(imageName: "Score", title: "SCORE", value: "590")
+        let (scoreStack, scoreValueLabel) = createStatsColumn(imageName: "Score", title: "SCORE", value: "\(totalScore)")
         let divider2 = createDivider()
-        let localStack = createStatsColumn(imageName: "Flag", title: "LOCAL RANK", value: "#56")
+        let (localStack, localLabel) = createStatsColumn(imageName: "Flag", title: "LOCAL RANK", value: "#\(localRank)")
+
+        worldRankLabel = worldLabel
+        scoreLabel = scoreValueLabel
+        localRankLabel = localLabel
 
         statsCardView.addSubview(worldStack)
         statsCardView.addSubview(divider1)
@@ -228,7 +292,7 @@ class HomeViewController: UIViewController {
         return divider
     }
 
-    private func createStatsColumn(imageName: String, title: String, value: String) -> UIStackView {
+    private func createStatsColumn(imageName: String, title: String, value: String) -> (UIStackView, UILabel) {
         let stack = UIStackView()
         stack.axis = .vertical
         stack.alignment = .center
@@ -257,7 +321,7 @@ class HomeViewController: UIViewController {
         stack.addArrangedSubview(titleLabel)
         stack.addArrangedSubview(valueLabel)
 
-        return stack
+        return (stack, valueLabel)
     }
 
     private func setupTimeCards() {
@@ -266,17 +330,15 @@ class HomeViewController: UIViewController {
         averageTimeCard.backgroundColor = UIColor(red: 0.92, green: 0.88, blue: 0.98, alpha: 1.0)
         averageTimeCard.layer.cornerRadius = 20
 
-
-
-
         let avgIcon = UIImageView()
         avgIcon.image = UIImage(named: "Total_time")
         avgIcon.contentMode = .scaleAspectFit
 
         let avgValue = UILabel()
-        avgValue.text = "9.39"
+        avgValue.text = String(format: "%.2f", averageTime)
         avgValue.font = UIFont.systemFont(ofSize: 36, weight: .bold)
         avgValue.textColor = UIColor(red: 0.1, green: 0.1, blue: 0.2, alpha: 1.0)
+        avgTimeLabel = avgValue
 
         let avgTitle = UILabel()
         avgTitle.text = "Average time"
@@ -310,9 +372,10 @@ class HomeViewController: UIViewController {
         totalIconImageView.contentMode = .scaleAspectFit
 
         let totalValue = UILabel()
-        totalValue.text = "91.39"
+        totalValue.text = String(format: "%.2f", totalTime)
         totalValue.font = UIFont.systemFont(ofSize: 36, weight: .bold)
         totalValue.textColor = UIColor(red: 0.1, green: 0.1, blue: 0.2, alpha: 1.0)
+        totalTimeLabel = totalValue
 
         let totalTitle = UILabel()
         totalTitle.text = "Total time"
@@ -345,11 +408,15 @@ class HomeViewController: UIViewController {
         performanceCardView.backgroundColor = .white
         performanceCardView.layer.cornerRadius = 20
 
-        let trueStack = createPerformanceColumn(imageName: "True", iconBg: UIColor(red: 0.0, green: 0.0, blue: 0.0, alpha: 0.0), title: "True", value: "30")
+        let (trueStack, trueValue) = createPerformanceColumn(imageName: "True", iconBg: .clear, title: "True", value: "\(correctAnswers)")
         let divider1 = createDivider()
-        let totalStack = createPerformanceColumn(imageName: "Total_game", iconBg: .clear, title: "Total game", value: "39")
+        let (totalStack, totalValue) = createPerformanceColumn(imageName: "Total_game", iconBg: .clear, title: "Total game", value: "\(totalQuestions)")
         let divider2 = createDivider()
-        let falseStack = createPerformanceColumn(imageName: "False", iconBg: UIColor(red: 0.0, green: 0.0, blue: 0.0, alpha: 0.0), title: "False", value: "9")
+        let (falseStack, falseValue) = createPerformanceColumn(imageName: "False", iconBg: .clear, title: "False", value: "\(wrongAnswers)")
+
+        trueLabel = trueValue
+        totalGameLabel = totalValue
+        falseLabel = falseValue
 
         performanceCardView.addSubview(trueStack)
         performanceCardView.addSubview(divider1)
@@ -372,7 +439,6 @@ class HomeViewController: UIViewController {
             totalStack.topAnchor.constraint(equalTo: performanceCardView.topAnchor, constant: 20),
             totalStack.bottomAnchor.constraint(equalTo: performanceCardView.bottomAnchor, constant: -20),
 
-
             divider2.leadingAnchor.constraint(equalTo: totalStack.trailingAnchor, constant: 6),
             divider2.centerYAnchor.constraint(equalTo: performanceCardView.centerYAnchor),
             divider2.widthAnchor.constraint(equalToConstant: 1),
@@ -385,7 +451,7 @@ class HomeViewController: UIViewController {
         ])
     }
 
-    private func createPerformanceColumn(imageName: String, iconBg: UIColor, title: String, value: String) -> UIStackView {
+    private func createPerformanceColumn(imageName: String, iconBg: UIColor, title: String, value: String) -> (UIStackView, UILabel) {
         let stack = UIStackView()
         stack.axis = .vertical
         stack.alignment = .center
@@ -425,7 +491,7 @@ class HomeViewController: UIViewController {
         stack.addArrangedSubview(titleLabel)
         stack.addArrangedSubview(valueLabel)
 
-        return stack
+        return (stack, valueLabel)
     }
 
     private func setupPlayButton() {
@@ -478,7 +544,6 @@ class HomeViewController: UIViewController {
         statsIcon.tintColor = UIColor(red: 0.0, green: 0.0, blue: 0.0, alpha: 0.2)
         statsIcon.contentMode = .scaleAspectFit
 
-
         statsIcon.isUserInteractionEnabled = true
         let tapGesture = UITapGestureRecognizer(target: self, action: #selector(leaderboardTapped))
         statsIcon.addGestureRecognizer(tapGesture)
@@ -501,7 +566,6 @@ class HomeViewController: UIViewController {
             statsIcon.heightAnchor.constraint(equalToConstant: 24)
         ])
     }
-
 
     private func setupConstraints() {
         NSLayoutConstraint.activate([
@@ -558,33 +622,28 @@ class HomeViewController: UIViewController {
         ])
     }
 
-
     @objc private func playButtonTapped() {
-        print(" Play button tapped")
+        print("⏯️ Play button tapped")
         let quizVC = QuizViewController()
         quizVC.modalPresentationStyle = .fullScreen
         quizVC.modalTransitionStyle = .crossDissolve
+
+        // Quiz bağlananda callback
+        quizVC.onDismiss = { [weak self] in
+            print("🔄 Quiz dismissed - refreshing home data...")
+            self?.fetchUserProfile()
+            self?.fetchUserStats()
+        }
+
         present(quizVC, animated: true)
     }
 
     @objc private func leaderboardTapped() {
-        print(" Leaderboard button tapped")
+        print("📊 Leaderboard button tapped")
         let leaderboardVC = LeaderboardViewController()
-        leaderboardVC.modalPresentationStyle = UIModalPresentationStyle.fullScreen
-        leaderboardVC.modalTransitionStyle = UIModalTransitionStyle.crossDissolve
+        leaderboardVC.modalPresentationStyle = .fullScreen
+        leaderboardVC.modalTransitionStyle = .crossDissolve
         present(leaderboardVC, animated: true)
-    }
-
-
-    private func loadUserData() {
-        nameLabel.text = userName
-        xpLabel.text = "XP \(userXP)"
-
-        if let imageURL = profileImageURL, let url = URL(string: imageURL) {
-            loadImage(from: url)
-        } else {
-            setDefaultAvatar()
-        }
     }
 
     private func loadImage(from url: URL) {
@@ -600,22 +659,6 @@ class HomeViewController: UIViewController {
             }
         }.resume()
     }
-
-    func updateUI() {
-        nameLabel.text = userName
-        xpLabel.text = "\(userXP) XP"
-
-        if let urlString = profileImageURL, let url = URL(string: urlString) {
-            URLSession.shared.dataTask(with: url) { data, _, _ in
-                if let data = data {
-                    DispatchQueue.main.async {
-                        self.profileImageView.image = UIImage(data: data)
-                    }
-                }
-            }.resume()
-        }
-    }
-
 
     private func setDefaultAvatar() {
         let initials = String(userName.prefix(2)).uppercased()
