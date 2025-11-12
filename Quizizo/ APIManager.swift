@@ -27,6 +27,8 @@ class APIManager {
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.addValue("en", forHTTPHeaderField: "X-Language")
+
 
         URLSession.shared.dataTask(with: request) { data, _, error in
             guard let data = data, error == nil else {
@@ -54,6 +56,8 @@ class APIManager {
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.addValue("en", forHTTPHeaderField: "X-Language")
+
 
         URLSession.shared.dataTask(with: request) { data, _, error in
             guard let data = data, error == nil else {
@@ -118,10 +122,27 @@ class APIManager {
                 return
             }
 
-            if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-               let isCorrect = json["isCorrect"] as? Bool {
-                completion(isCorrect)
-            } else {
+            // 🧩 Əvvəlcə JSON parse et
+            do {
+                let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+
+                // Əgər cavabda "isCorrect" root səviyyəsindədirsə
+                if let isCorrect = json?["isCorrect"] as? Bool {
+                    completion(isCorrect)
+                    return
+                }
+
+                // Əgər cavabda "data" obyektinin içindədəsə
+                if let dataObj = json?["data"] as? [String: Any],
+                   let isCorrect = dataObj["isCorrect"] as? Bool {
+                    completion(isCorrect)
+                    return
+                }
+
+                // Əgər heç biri tapılmadısa
+                completion(false)
+            } catch {
+                print("❌ JSON parse error:", error)
                 completion(false)
             }
         }.resume()

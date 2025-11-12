@@ -371,11 +371,35 @@ class QuizViewController: UIViewController {
             print("📝 Question ID:", questionId)
         }
 
+        
         // Question text
         if let qText = questionData["questionText"] as? String, qText != "<null>" {
-            questionLabel.text = qText
-        } else {
-            // Şəkil varsa, sual mətni yoxdursa boş qoy
+            // 🔹 Əgər gələn text JSON kimi görünürsə, parse et
+            if let data = qText.data(using: .utf8),
+               let jsonObj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                if let englishText = jsonObj["en"] as? String {
+                    questionLabel.text = englishText
+                } else if let turkishText = jsonObj["tr"] as? String {
+                    questionLabel.text = turkishText
+                } else {
+                    questionLabel.text = qText
+                }
+            } else {
+                // Sadə string gəlmişsə, birbaşa göstər
+                questionLabel.text = qText
+            }
+        }
+        else if let qTextDict = questionData["questionText"] as? [String: Any] {
+            // çoxdilli gələn sual üçün (en, tr və s.)
+            if let englishText = qTextDict["en"] as? String {
+                questionLabel.text = englishText
+            } else if let turkishText = qTextDict["tr"] as? String {
+                questionLabel.text = turkishText
+            } else {
+                questionLabel.text = ""
+            }
+        }
+        else {
             questionLabel.text = ""
         }
 

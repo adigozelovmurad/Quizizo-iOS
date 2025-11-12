@@ -63,6 +63,11 @@
 			path = QuizizoUITests;
 			sourceTree = "<group>";
 		};
+		FAA6A9832EC4C750005C3D8C /* GoogleService-Info.plist */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "GoogleService-Info.plist";
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -102,6 +107,7 @@
 		FA2198A32E8D81CB00770DBA = {
 			isa = PBXGroup;
 			children = (
+				FAA6A9832EC4C750005C3D8C /* GoogleService-Info.plist */,
 				FA2198AE2E8D81CB00770DBA /* Quizizo */,
 				FA2198C52E8D81CD00770DBA /* QuizizoTests */,
 				FA2198CF2E8D81CD00770DBA /* QuizizoUITests */,
@@ -137,6 +143,7 @@
 			);
 			fileSystemSynchronizedGroups = (
 				FA2198AE2E8D81CB00770DBA /* Quizizo */,
+				FAA6A9832EC4C750005C3D8C /* GoogleService-Info.plist */,
 			);
 			name = Quizizo;
 			packageProductDependencies = (

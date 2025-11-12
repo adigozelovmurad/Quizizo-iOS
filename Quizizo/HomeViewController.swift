@@ -234,6 +234,12 @@ class HomeViewController: UIViewController {
         profileImageView.layer.cornerRadius = 27
         profileImageView.clipsToBounds = true
         profileImageView.backgroundColor = UIColor(red: 0.75, green: 0.6, blue: 0.95, alpha: 1.0)
+
+        // Profile Image tap gesture (profilə toxunanda modal açılsın)
+        profileImageView.isUserInteractionEnabled = true
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(profileTapped))
+        profileImageView.addGestureRecognizer(tapGesture)
+
     }
 
     private func setupStatsCard() {
@@ -526,6 +532,35 @@ class HomeViewController: UIViewController {
 
         playButton.addTarget(self, action: #selector(playButtonTapped), for: .touchUpInside)
     }
+
+    @objc private func profileTapped() {
+        print("👤 Profile tapped")
+
+        let modalVC = ProfileModalViewController()
+        modalVC.modalPresentationStyle = .overFullScreen
+        modalVC.modalTransitionStyle = .crossDissolve
+
+        // 🧠 Mövcud istifadəçi məlumatlarını ötürürük
+        modalVC.userName = userName
+        modalVC.userEmail = userEmail
+        modalVC.userXP = userXP
+        modalVC.profileImageURL = profileImageURL
+
+        // Logout callback
+        modalVC.onLogout = { [weak self] in
+            print("🚪 Logged out — redirecting to AuthViewController")
+            self?.navigateToAuthScreen()
+        }
+
+        present(modalVC, animated: true)
+    }
+    private func navigateToAuthScreen() {
+        let authVC = AuthViewController()
+        authVC.modalPresentationStyle = .fullScreen
+        authVC.modalTransitionStyle = .crossDissolve
+        self.present(authVC, animated: true)
+    }
+
 
     private func setupBottomNavigation() {
         view.addSubview(bottomNavView)
