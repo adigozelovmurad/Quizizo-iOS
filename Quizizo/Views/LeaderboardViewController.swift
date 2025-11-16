@@ -273,10 +273,18 @@ class LeaderboardViewController: UIViewController {
     @objc private func segmentChanged() {
         if useDemoMode {
             loadDemoData()
-        } else {
+            return
+        }
+
+        if segmentedControl.selectedSegmentIndex == 0 {
+            // GLOBAL
             fetchLeaderboard()
+        } else {
+            // LOCAL (yalnız Azərbaycan)
+            fetchLocalLeaderboard()
         }
     }
+
 
     @objc private func homeButtonTapped() {
         dismiss(animated: true, completion: nil)
@@ -288,6 +296,27 @@ extension LeaderboardViewController: UITableViewDelegate, UITableViewDataSource 
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return leaderboardData.count
     }
+
+    private func fetchLocalLeaderboard() {
+        activityIndicator.startAnimating()
+
+        APIManager.shared.fetchLeaderboard(page: 1, limit: 200) { [weak self] response in
+            DispatchQueue.main.async {
+                self?.activityIndicator.stopAnimating()
+
+                guard let leaders = response?.data.leaders else { return }
+
+                // Yalnız Azərbaycan
+                let filtered = leaders.filter { $0.country == "AZ" }
+
+                self?.leaderboardData = filtered
+                self?.tableView.reloadData()
+
+                print("🇦🇿 LOCAL leaderboard loaded: \(filtered.count) AZ users")
+            }
+        }
+    }
+
 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "LeaderboardCell", for: indexPath) as! LeaderboardCell
@@ -308,6 +337,8 @@ extension LeaderboardViewController: UITableViewDelegate, UITableViewDataSource 
         return 80
     }
 }
+
+
 
 // MARK: - Custom Cell
 class LeaderboardCell: UITableViewCell {

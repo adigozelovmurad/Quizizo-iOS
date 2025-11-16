@@ -29,7 +29,6 @@ class QuizViewController: UIViewController {
 
     private var optionButtonTopConstraints: [NSLayoutConstraint] = []
 
-    // Callback - quiz bağlananda çağrılır
     var onDismiss: (() -> Void)?
 
     override func viewDidLoad() {
@@ -311,6 +310,8 @@ class QuizViewController: UIViewController {
     private func startTimer() {
         countdown = 59
         questionStartTime = Date()
+        updateTimerLabel()
+
         timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
             guard let self = self else { return }
             if self.countdown > 0 {
@@ -334,9 +335,11 @@ class QuizViewController: UIViewController {
         sendAnswer(selectedIndex: -1)
     }
 
-    // MARK: - API Integration
     func loadNextQuestion() {
         print("📡 Yeni sual yüklənir...")
+
+        timer?.invalidate()
+        timer = nil
 
         APIManager.shared.fetchNextQuestion { [weak self] response in
             guard let self = self else { return }
@@ -355,59 +358,28 @@ class QuizViewController: UIViewController {
     private func processAPIQuestion(data: [String: Any]) {
         print("✅ API cavab gəldi:", data)
 
-        // Reset UI
         resetUI()
 
-        // Backend data strukturu: data -> içində məlumatlar
         guard let questionData = data["data"] as? [String: Any] else {
             print("❌ 'data' key tapılmadı")
             loadDemoQuestion()
             return
         }
 
-        // Question ID
         if let id = questionData["id"] as? String {
             questionId = id
             print("📝 Question ID:", questionId)
         }
 
-        
-        // Question text
         if let qText = questionData["questionText"] as? String, qText != "<null>" {
-            // 🔹 Əgər gələn text JSON kimi görünürsə, parse et
-            if let data = qText.data(using: .utf8),
-               let jsonObj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
-                if let englishText = jsonObj["en"] as? String {
-                    questionLabel.text = englishText
-                } else if let turkishText = jsonObj["tr"] as? String {
-                    questionLabel.text = turkishText
-                } else {
-                    questionLabel.text = qText
-                }
-            } else {
-                // Sadə string gəlmişsə, birbaşa göstər
-                questionLabel.text = qText
-            }
-        }
-        else if let qTextDict = questionData["questionText"] as? [String: Any] {
-            // çoxdilli gələn sual üçün (en, tr və s.)
-            if let englishText = qTextDict["en"] as? String {
-                questionLabel.text = englishText
-            } else if let turkishText = qTextDict["tr"] as? String {
-                questionLabel.text = turkishText
-            } else {
-                questionLabel.text = ""
-            }
-        }
-        else {
-            questionLabel.text = ""
+            questionLabel.text = qText
+        } else {
+            questionLabel.text = "Which of the following options is correct?"
         }
 
-        // Question type
         let type = questionData["type"] as? String ?? "MULTIPLE_CHOICE"
         print("📋 Question Type:", type)
 
-        // Question image URL (backend "/images/..." qaytarır)
         if let imageUrl = questionData["imageUrl"] as? String, !imageUrl.isEmpty {
             let fullImageUrl = "https://api.quizizo.com\(imageUrl)"
             print("🖼️ Image URL:", fullImageUrl)
@@ -415,19 +387,26 @@ class QuizViewController: UIViewController {
             loadImage(from: fullImageUrl)
         }
 
-        // Options (backend "options" array ilə göndərir)
         if let options = questionData["options"] as? [[String: Any]] {
             showOptionsFromAPI(options)
+
+            // ✅ Backend "isCorrect" key göndərir - onu saxlayırıq
+            if let correctIndex = options.firstIndex(where: { ($0["isCorrect"] as? Bool) == true }) {
+                self.correctAnswerIndex = correctIndex
+                print("✅ Düzgün cavab index (options-dan): \(correctIndex)")
+            } else {
+                // ⚠️ Əgər isCorrect yoxdursa, -1 qoy
+                self.correctAnswerIndex = -1
+                print("⚠️ isCorrect key tapılmadı, correctIndex = -1")
+            }
         }
 
-        // Update constraints
         updateOptionButtonConstraints()
         view.setNeedsLayout()
         view.layoutIfNeeded()
 
-        // Restart timer
-        countdown = 59
-        questionStartTime = Date()
+        timer?.invalidate()
+        startTimer()
     }
 
     private func showOptionsFromAPI(_ options: [[String: Any]]) {
@@ -437,7 +416,6 @@ class QuizViewController: UIViewController {
             if i < options.count {
                 let option = options[i]
 
-                // Backend "text" key ilə göndərir
                 var optionText = ""
                 if let text = option["text"] as? String {
                     optionText = text
@@ -466,6 +444,7 @@ class QuizViewController: UIViewController {
         questionImageView.isHidden = true
         questionImageView.image = nil
         questionImageView.constraints.forEach { $0.isActive = false }
+        selectedOptionIndex = nil
     }
 
     private func loadDemoQuestion() {
@@ -477,7 +456,7 @@ class QuizViewController: UIViewController {
                 "type": "MULTIPLE_CHOICE",
                 "options": [
                     ["text": "A) Eiffel Tower"],
-                    ["text": "B) Colosseum"],
+                    ["text": "B) Colosseum", "isCorrect": true],
                     ["text": "C) Big Ben"],
                     ["text": "D) Statue of Liberty"]
                 ]
@@ -528,23 +507,96 @@ class QuizViewController: UIViewController {
         print("  - Selected Index: \(selectedIndex)")
         print("  - Duration: \(duration)s")
 
-        // Seçilmiş buttonu saxla
         let selectedButton = selectedIndex >= 0 ? optionButtons[selectedIndex] : nil
 
-        APIManager.shared.sendAnswer(questionId: questionId, selectedIndex: selectedIndex, duration: duration) { [weak self] isCorrect in
-            DispatchQueue.main.async {
-                print(isCorrect ? "✅ Düzgün cavab!" : "❌ Səhv cavab!")
+        APIManager.shared.sendAnswer(questionId: questionId, selectedIndex: selectedIndex, duration: duration) { [weak self] isCorrect, correctIndexFromBackend in
+            guard let self = self else { return }
 
-                // Vizual feedback
-                if let button = selectedButton {
-                    button.backgroundColor = isCorrect ? .systemGreen : .systemRed
-                    button.setTitleColor(.white, for: .normal)
+            DispatchQueue.main.async {
+                // ✅ Backend correctIndex göndərdisə, onu istifadə et
+                if let correctIndexFromBackend = correctIndexFromBackend {
+                    self.correctAnswerIndex = correctIndexFromBackend
+                    print("✅ Backend-dən correctIndex yeniləndi: \(correctIndexFromBackend)")
                 }
 
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                    self?.loadNextQuestion()
+                if isCorrect {
+                    // ✅ Düzgün cavab
+                    print("✅ Düzgün cavab!")
+                    if let button = selectedButton {
+                        button.backgroundColor = .systemGreen
+                        button.setTitleColor(.white, for: .normal)
+                    }
+
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                        self.loadNextQuestion()
+                    }
+                } else {
+                    // ❌ Yanlış cavab
+                    print("❌ Səhv cavab!")
+                    print("💡 Düzgün cavab: index \(self.correctAnswerIndex)")
+
+                    if let button = selectedButton {
+                        button.backgroundColor = .systemRed
+                        button.setTitleColor(.white, for: .normal)
+                    }
+
+                    self.showWrongAnswerModal()
                 }
             }
+        }
+    }
+
+    private func showWrongAnswerModal() {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            let modal = WrongAnswerModalViewController()
+            modal.modalPresentationStyle = .overFullScreen
+            modal.modalTransitionStyle = .crossDissolve
+
+            modal.onContinue = { [weak self] in
+                guard let self = self else { return }
+                print("👀 Cevabı göstər")
+
+                // Bütün buttonları sıfırla
+                self.optionButtons.forEach {
+                    $0.backgroundColor = .white
+                    $0.setTitleColor(UIColor(red: 0.2, green: 0.2, blue: 0.3, alpha: 1.0), for: .normal)
+                    $0.layer.borderColor = UIColor(red: 0x7C/255.0, green: 0x5E/255.0, blue: 0xF1/255.0, alpha: 0.3).cgColor
+                }
+
+                // ✅ Düzgün cavabı yaşıl et
+                if self.correctAnswerIndex >= 0 && self.correctAnswerIndex < self.optionButtons.count {
+                    let correctButton = self.optionButtons[self.correctAnswerIndex]
+                    correctButton.backgroundColor = .systemGreen
+                    correctButton.setTitleColor(.white, for: .normal)
+                    correctButton.layer.borderColor = UIColor.systemGreen.cgColor
+
+                    UIView.animate(withDuration: 0.2, animations: {
+                        correctButton.transform = CGAffineTransform(scaleX: 1.1, y: 1.1)
+                    }) { _ in
+                        UIView.animate(withDuration: 0.2) {
+                            correctButton.transform = .identity
+                        }
+                    }
+                } else {
+                    print("⚠️ correctAnswerIndex mövcud deyil, düzgün cavab göstərilə bilməz")
+                }
+
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                    self.loadNextQuestion()
+                }
+            }
+
+            modal.onPlayAgain = { [weak self] in
+                print("▶️ Növbəti suala keç")
+                self?.loadNextQuestion()
+            }
+
+            modal.onQuit = { [weak self] in
+                print("🚪 Oyundan çıx")
+                self?.dismiss(animated: true)
+            }
+
+            self.present(modal, animated: true)
         }
     }
 
@@ -563,13 +615,9 @@ class QuizViewController: UIViewController {
         let index = sender.tag
         selectOption(at: index)
 
-        // Timer dayandır
         timer?.invalidate()
-
-        // Buttonları disable et (double tap önləmək üçün)
         optionButtons.forEach { $0.isUserInteractionEnabled = false }
 
-        // Animasiya ilə seçim göstər
         UIView.animate(withDuration: 0.2) {
             sender.transform = CGAffineTransform(scaleX: 0.95, y: 0.95)
         } completion: { _ in
@@ -577,7 +625,6 @@ class QuizViewController: UIViewController {
                 sender.transform = .identity
             }
 
-            // Backend-ə cavab göndər
             self.sendAnswer(selectedIndex: index)
         }
     }
@@ -597,7 +644,9 @@ class QuizViewController: UIViewController {
 
     @objc private func closeButtonTapped() {
         timer?.invalidate()
-        dismiss(animated: true)
+        dismiss(animated: true) { [weak self] in
+            self?.onDismiss?()
+        }
     }
 
     deinit {

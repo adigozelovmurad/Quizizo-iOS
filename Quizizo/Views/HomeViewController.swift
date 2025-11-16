@@ -4,7 +4,6 @@
 //
 //  Created by MURAD on 7.10.2025.
 //
-
 import UIKit
 
 class HomeViewController: UIViewController {
@@ -46,6 +45,14 @@ class HomeViewController: UIViewController {
     private var avgTimeLabel: UILabel?
     private var totalTimeLabel: UILabel?
 
+    func formatTime(_ seconds: Double) -> String {
+       let totalSeconds = Int(seconds)
+       let minutes = totalSeconds / 60
+       let remainingSeconds = totalSeconds % 60
+
+       return String(format: "%02d:%02d", minutes, remainingSeconds)
+   }
+
     override func viewDidLoad() {
         super.viewDidLoad()
         setupGradientBackground()
@@ -56,6 +63,7 @@ class HomeViewController: UIViewController {
         // İlk yüklənmədə data çək
         fetchUserProfile()
         fetchUserStats()
+
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -65,6 +73,8 @@ class HomeViewController: UIViewController {
         print("🔄 Home screen appeared - refreshing data...")
         fetchUserProfile()
         fetchUserStats()
+
+
     }
 
     private func fetchUserProfile() {
@@ -101,12 +111,9 @@ class HomeViewController: UIViewController {
                     // Total question = doğru + yanlış (backend-də ayrıca gəlmir)
                     self.totalQuestions = self.correctAnswers + self.wrongAnswers
 
-                    if let avg = data["averageDuration"] {
-                        self.averageTime = Double("\(avg)") ?? 0.0
-                    }
-                    if let total = data["totalDuration"] {
-                        self.totalTime = Double("\(total)") ?? 0.0
-                    }
+                    self.averageTime = self.parseDouble(data["averageDuration"])
+                    self.totalTime = self.parseDouble(data["totalDuration"])
+
 
                     self.userXP = data["xp"] as? Int ?? 0
 
@@ -158,8 +165,10 @@ class HomeViewController: UIViewController {
         falseLabel?.text = "\(wrongAnswers)"
 
         // Time Cards
-        avgTimeLabel?.text = String(format: "%.2f", averageTime)
-        totalTimeLabel?.text = String(format: "%.2f", totalTime)
+        avgTimeLabel?.text = formatTime(averageTime)
+
+        totalTimeLabel?.text = formatTime(totalTime)
+
     }
 
     private func setupGradientBackground() {
@@ -341,7 +350,7 @@ class HomeViewController: UIViewController {
         avgIcon.contentMode = .scaleAspectFit
 
         let avgValue = UILabel()
-        avgValue.text = String(format: "%.2f", averageTime)
+        avgValue.text = formatTime(averageTime)
         avgValue.font = UIFont.systemFont(ofSize: 36, weight: .bold)
         avgValue.textColor = UIColor(red: 0.1, green: 0.1, blue: 0.2, alpha: 1.0)
         avgTimeLabel = avgValue
@@ -378,7 +387,7 @@ class HomeViewController: UIViewController {
         totalIconImageView.contentMode = .scaleAspectFit
 
         let totalValue = UILabel()
-        totalValue.text = String(format: "%.2f", totalTime)
+        totalValue.text = formatTime(totalTime)
         totalValue.font = UIFont.systemFont(ofSize: 36, weight: .bold)
         totalValue.textColor = UIColor(red: 0.1, green: 0.1, blue: 0.2, alpha: 1.0)
         totalTimeLabel = totalValue
@@ -656,6 +665,16 @@ class HomeViewController: UIViewController {
             bottomNavView.heightAnchor.constraint(equalToConstant: 80)
         ])
     }
+
+    private func parseDouble(_ value: Any?) -> Double {
+        if let d = value as? Double { return d }
+        if let i = value as? Int { return Double(i) }
+        if let s = value as? String {
+            return Double(s.trimmingCharacters(in: .whitespacesAndNewlines)) ?? 0.0
+        }
+        return 0.0
+    }
+
 
     @objc private func playButtonTapped() {
         print("⏯️ Play button tapped")
