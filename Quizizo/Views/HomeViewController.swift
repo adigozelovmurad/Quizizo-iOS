@@ -25,7 +25,7 @@ class HomeViewController: UIViewController {
     var userXP: Int = 0
     var profileImageURL: String?
 
-    // Stats data
+
     private var worldRank: Int = 0
     private var localRank: Int = 0
     private var totalScore: Int = 0
@@ -35,7 +35,7 @@ class HomeViewController: UIViewController {
     private var averageTime: Double = 0.0
     private var totalTime: Double = 0.0
 
-    // UI references
+
     private var worldRankLabel: UILabel?
     private var scoreLabel: UILabel?
     private var localRankLabel: UILabel?
@@ -60,7 +60,7 @@ class HomeViewController: UIViewController {
         setupUI()
         setupConstraints()
 
-        // İlk yüklənmədə data çək
+
         fetchUserProfile()
         fetchUserStats()
 
@@ -69,7 +69,7 @@ class HomeViewController: UIViewController {
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
 
-        // Hər dəfə ekrana qayıdanda yenilə
+
         print("🔄 Home screen appeared - refreshing data...")
         fetchUserProfile()
         fetchUserStats()
@@ -100,7 +100,7 @@ class HomeViewController: UIViewController {
                 if let data = json?["data"] as? [String: Any] {
                     print("📦 Stats data keys:", data.keys)
 
-                    // ✅ Backend uyğun key-lərlə
+
                     self.worldRank = data["globalRankPosition"] as? Int ?? 0
                     self.localRank = data["localRankPosition"] as? Int ?? 0
                     self.totalScore = data["score"] as? Int ?? 0
@@ -108,7 +108,7 @@ class HomeViewController: UIViewController {
                     self.correctAnswers = data["correctCount"] as? Int ?? 0
                     self.wrongAnswers = data["wrongCount"] as? Int ?? 0
 
-                    // Total question = doğru + yanlış (backend-də ayrıca gəlmir)
+
                     self.totalQuestions = self.correctAnswers + self.wrongAnswers
 
                     self.averageTime = self.parseDouble(data["averageDuration"])
@@ -151,20 +151,20 @@ class HomeViewController: UIViewController {
     }
 
     private func updateStatsUI() {
-        // Update XP
+
         xpLabel.text = "XP \(userXP)"
 
-        // Stats Card
+
         worldRankLabel?.text = "#\(worldRank)"
         scoreLabel?.text = "\(totalScore)"
         localRankLabel?.text = "#\(localRank)"
 
-        // Performance Card
+
         trueLabel?.text = "\(correctAnswers)"
         totalGameLabel?.text = "\(totalQuestions)"
         falseLabel?.text = "\(wrongAnswers)"
 
-        // Time Cards
+
         avgTimeLabel?.text = formatTime(averageTime)
 
         totalTimeLabel?.text = formatTime(totalTime)
@@ -244,7 +244,7 @@ class HomeViewController: UIViewController {
         profileImageView.clipsToBounds = true
         profileImageView.backgroundColor = UIColor(red: 0.75, green: 0.6, blue: 0.95, alpha: 1.0)
 
-        // Profile Image tap gesture (profilə toxunanda modal açılsın)
+
         profileImageView.isUserInteractionEnabled = true
         let tapGesture = UITapGestureRecognizer(target: self, action: #selector(profileTapped))
         profileImageView.addGestureRecognizer(tapGesture)
@@ -549,13 +549,13 @@ class HomeViewController: UIViewController {
         modalVC.modalPresentationStyle = .overFullScreen
         modalVC.modalTransitionStyle = .crossDissolve
 
-        // 🧠 Mövcud istifadəçi məlumatlarını ötürürük
+
         modalVC.userName = userName
         modalVC.userEmail = userEmail
         modalVC.userXP = userXP
         modalVC.profileImageURL = profileImageURL
 
-        // Logout callback
+
         modalVC.onLogout = { [weak self] in
             print("🚪 Logged out — redirecting to AuthViewController")
             self?.navigateToAuthScreen()
@@ -677,14 +677,14 @@ class HomeViewController: UIViewController {
 
 
     @objc private func playButtonTapped() {
-        print("⏯️ Play button tapped")
+        print(" Play button tapped")
         let quizVC = QuizViewController()
         quizVC.modalPresentationStyle = .fullScreen
         quizVC.modalTransitionStyle = .crossDissolve
 
-        // Quiz bağlananda callback
+
         quizVC.onDismiss = { [weak self] in
-            print("🔄 Quiz dismissed - refreshing home data...")
+            print(" Quiz dismissed - refreshing home data...")
             self?.fetchUserProfile()
             self?.fetchUserStats()
         }
@@ -693,7 +693,7 @@ class HomeViewController: UIViewController {
     }
 
     @objc private func leaderboardTapped() {
-        print("📊 Leaderboard button tapped")
+        print(" Leaderboard button tapped")
         let leaderboardVC = LeaderboardViewController()
         leaderboardVC.modalPresentationStyle = .fullScreen
         leaderboardVC.modalTransitionStyle = .crossDissolve

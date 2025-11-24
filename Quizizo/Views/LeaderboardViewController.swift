@@ -9,7 +9,7 @@ import UIKit
 
 class LeaderboardViewController: UIViewController {
 
-    // MARK: - Properties
+    
     private let segmentedControl = UISegmentedControl(items: ["Global", "Local"])
     private let tableView = UITableView()
     private let bottomNavView = UIView()
@@ -24,7 +24,7 @@ class LeaderboardViewController: UIViewController {
 
     private let useDemoMode = false
 
-    // MARK: - Lifecycle
+
     override func viewDidLoad() {
         super.viewDidLoad()
         setupGradientBackground()
@@ -43,7 +43,7 @@ class LeaderboardViewController: UIViewController {
         }
     }
 
-    // MARK: - Gradient Background
+
     private func setupGradientBackground() {
         let gradientLayer = CAGradientLayer()
         gradientLayer.colors = [
@@ -56,7 +56,7 @@ class LeaderboardViewController: UIViewController {
         view.layer.insertSublayer(gradientLayer, at: 0)
     }
 
-    // MARK: - Ovals
+
     private func addBackgroundOvals() {
         let oval1 = UIImageView(image: UIImage(named: "Oval2"))
         oval1.contentMode = .scaleAspectFit
@@ -81,7 +81,7 @@ class LeaderboardViewController: UIViewController {
         ])
     }
 
-    // MARK: - Rectangle Background
+
     private func setupRectangleBackground() {
         backgroundRectangle.image = UIImage(named: "Rectangle")
         backgroundRectangle.contentMode = .scaleAspectFill
@@ -89,7 +89,7 @@ class LeaderboardViewController: UIViewController {
         view.insertSubview(backgroundRectangle, at: 3)
     }
 
-    // MARK: - Ellipse
+
     private func setupEllipse() {
         ellipseImageView.image = UIImage(named: "Ellipse")
         ellipseImageView.contentMode = .scaleAspectFit
@@ -97,7 +97,7 @@ class LeaderboardViewController: UIViewController {
         view.addSubview(ellipseImageView)
     }
 
-    // MARK: - Setup UI
+
     private func setupUI() {
         setupSegmentedControl()
         setupTableView()
@@ -185,7 +185,7 @@ class LeaderboardViewController: UIViewController {
         ])
     }
 
-    // MARK: - Constraints
+
     private func setupConstraints() {
         NSLayoutConstraint.activate([
             backgroundRectangle.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 26),
@@ -218,7 +218,7 @@ class LeaderboardViewController: UIViewController {
         ])
     }
 
-    // MARK: - API Request
+
     private func fetchLeaderboard() {
         guard KeychainManager.read(key: "authToken") != nil else {
             print("❌ Token tapılmadı")
@@ -247,7 +247,7 @@ class LeaderboardViewController: UIViewController {
         }
     }
 
-    // MARK: - Demo Data
+
     private func loadDemoData() {
         let demoData: [LeaderboardEntry] = [
             LeaderboardEntry(userId: "1", name: "Davis Curtis", score: 2569, rank: "🎖️ General", rankPosition: 1, country: "CA", profilePicture: nil),
@@ -269,7 +269,7 @@ class LeaderboardViewController: UIViewController {
         }
     }
 
-    // MARK: - Actions
+
     @objc private func segmentChanged() {
         if useDemoMode {
             loadDemoData()
@@ -277,10 +277,10 @@ class LeaderboardViewController: UIViewController {
         }
 
         if segmentedControl.selectedSegmentIndex == 0 {
-            // GLOBAL
+
             fetchLeaderboard()
         } else {
-            // LOCAL (yalnız Azərbaycan)
+
             fetchLocalLeaderboard()
         }
     }
@@ -340,7 +340,7 @@ extension LeaderboardViewController: UITableViewDelegate, UITableViewDataSource 
 
 
 
-// MARK: - Custom Cell
+
 class LeaderboardCell: UITableViewCell {
     private let containerView = UIView()
     private let rankImageView = UIImageView()

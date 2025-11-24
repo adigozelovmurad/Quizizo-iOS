@@ -31,17 +31,17 @@ class WrongAnswerModalViewController: UIViewController {
     }
 
     private func setupUI() {
-        // Semi-transparent background
+
         view.backgroundColor = UIColor.black.withAlphaComponent(0.7)
 
-        // Container
+
         containerView.backgroundColor = .white
         containerView.layer.cornerRadius = 24
         containerView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(containerView)
 
-        // Title Label
-        titleLabel.text = "Sıradaki soruya geçiliyor"
+
+        titleLabel.text = "Sıradaki suala kecilir"
         titleLabel.font = UIFont.systemFont(ofSize: 20, weight: .bold)
         titleLabel.textColor = UIColor(red: 0.1, green: 0.1, blue: 0.2, alpha: 1.0)
         titleLabel.textAlignment = .center
@@ -49,7 +49,7 @@ class WrongAnswerModalViewController: UIViewController {
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         containerView.addSubview(titleLabel)
 
-        // Countdown Label
+
         countdownLabel.text = "5s"
         countdownLabel.font = UIFont.systemFont(ofSize: 48, weight: .bold)
         countdownLabel.textColor = UIColor(red: 0x7C/255.0, green: 0x5E/255.0, blue: 0xF1/255.0, alpha: 1.0)
@@ -57,7 +57,7 @@ class WrongAnswerModalViewController: UIViewController {
         countdownLabel.translatesAutoresizingMaskIntoConstraints = false
         containerView.addSubview(countdownLabel)
 
-        // Oyundan Çık Button
+
         quitButton.setTitle("Oyundan Çık", for: .normal)
         quitButton.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .semibold)
         quitButton.setTitleColor(UIColor(red: 0x7C/255.0, green: 0x5E/255.0, blue: 0xF1/255.0, alpha: 1.0), for: .normal)
@@ -69,7 +69,7 @@ class WrongAnswerModalViewController: UIViewController {
         quitButton.addTarget(self, action: #selector(quitTapped), for: .touchUpInside)
         containerView.addSubview(quitButton)
 
-        // Devam Et Button
+
         playAgainButton.setTitle("Devam et", for: .normal)
         playAgainButton.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .bold)
         playAgainButton.setTitleColor(.white, for: .normal)
@@ -77,7 +77,7 @@ class WrongAnswerModalViewController: UIViewController {
         playAgainButton.translatesAutoresizingMaskIntoConstraints = false
         playAgainButton.addTarget(self, action: #selector(playAgainTapped), for: .touchUpInside)
 
-        // Gradient background for Devam Et button
+
         let gradientLayer = CAGradientLayer()
         gradientLayer.colors = [
             UIColor(red: 0xE2/255.0, green: 0x7B/255.0, blue: 0xF5/255.0, alpha: 1.0).cgColor,
@@ -96,8 +96,8 @@ class WrongAnswerModalViewController: UIViewController {
 
         containerView.addSubview(playAgainButton)
 
-        // Cevabı gör Button
-        continueButton.setTitle("Cevabı gör", for: .normal)
+
+        continueButton.setTitle("Cavabı gör", for: .normal)
         continueButton.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .bold)
         continueButton.setTitleColor(.white, for: .normal)
         continueButton.backgroundColor = UIColor(red: 0x7C/255.0, green: 0x5E/255.0, blue: 0xF1/255.0, alpha: 1.0)
@@ -106,7 +106,7 @@ class WrongAnswerModalViewController: UIViewController {
         continueButton.addTarget(self, action: #selector(continueTapped), for: .touchUpInside)
         containerView.addSubview(continueButton)
 
-        // Constraints
+       
         NSLayoutConstraint.activate([
             containerView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             containerView.centerYAnchor.constraint(equalTo: view.centerYAnchor),

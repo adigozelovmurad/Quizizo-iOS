@@ -390,12 +390,12 @@ class QuizViewController: UIViewController {
         if let options = questionData["options"] as? [[String: Any]] {
             showOptionsFromAPI(options)
 
-            // ✅ Backend "isCorrect" key göndərir - onu saxlayırıq
+
             if let correctIndex = options.firstIndex(where: { ($0["isCorrect"] as? Bool) == true }) {
                 self.correctAnswerIndex = correctIndex
                 print("✅ Düzgün cavab index (options-dan): \(correctIndex)")
             } else {
-                // ⚠️ Əgər isCorrect yoxdursa, -1 qoy
+
                 self.correctAnswerIndex = -1
                 print("⚠️ isCorrect key tapılmadı, correctIndex = -1")
             }
@@ -513,14 +513,16 @@ class QuizViewController: UIViewController {
             guard let self = self else { return }
 
             DispatchQueue.main.async {
-                // ✅ Backend correctIndex göndərdisə, onu istifadə et
+                // ✅ Backend correctIndex göndərdisə, onu MÜTLƏQ saxla
                 if let correctIndexFromBackend = correctIndexFromBackend {
                     self.correctAnswerIndex = correctIndexFromBackend
-                    print("✅ Backend-dən correctIndex yeniləndi: \(correctIndexFromBackend)")
+                    print("✅ Backend-dən correctIndex alındı və saxlanıldı: \(correctIndexFromBackend)")
+                } else {
+                    print("⚠️ Backend correctIndex göndərmədi!")
                 }
 
                 if isCorrect {
-                    // ✅ Düzgün cavab
+
                     print("✅ Düzgün cavab!")
                     if let button = selectedButton {
                         button.backgroundColor = .systemGreen
@@ -531,14 +533,15 @@ class QuizViewController: UIViewController {
                         self.loadNextQuestion()
                     }
                 } else {
-                    // ❌ Yanlış cavab
+
                     print("❌ Səhv cavab!")
-                    print("💡 Düzgün cavab: index \(self.correctAnswerIndex)")
+                    print("💡 Düzgün cavab index: \(self.correctAnswerIndex)")
 
                     if let button = selectedButton {
                         button.backgroundColor = .systemRed
                         button.setTitleColor(.white, for: .normal)
                     }
+
 
                     self.showWrongAnswerModal()
                 }
@@ -556,14 +559,14 @@ class QuizViewController: UIViewController {
                 guard let self = self else { return }
                 print("👀 Cevabı göstər")
 
-                // Bütün buttonları sıfırla
+
                 self.optionButtons.forEach {
                     $0.backgroundColor = .white
                     $0.setTitleColor(UIColor(red: 0.2, green: 0.2, blue: 0.3, alpha: 1.0), for: .normal)
                     $0.layer.borderColor = UIColor(red: 0x7C/255.0, green: 0x5E/255.0, blue: 0xF1/255.0, alpha: 0.3).cgColor
                 }
 
-                // ✅ Düzgün cavabı yaşıl et
+                
                 if self.correctAnswerIndex >= 0 && self.correctAnswerIndex < self.optionButtons.count {
                     let correctButton = self.optionButtons[self.correctAnswerIndex]
                     correctButton.backgroundColor = .systemGreen

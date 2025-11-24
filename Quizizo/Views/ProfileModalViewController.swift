@@ -245,13 +245,13 @@ class ProfileModalViewController: UIViewController {
 
         print("✅ Token deleted, redirecting to auth...")
 
-        // Animation ilə bağlan
+
         UIView.animate(withDuration: 0.2, animations: {
             self.containerView.transform = CGAffineTransform(scaleX: 0.9, y: 0.9)
             self.containerView.alpha = 0
         }) { _ in
             self.dismiss(animated: false) {
-                // Callback ilə logout et
+                
                 self.onLogout?()
             }
         }

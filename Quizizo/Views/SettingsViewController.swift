@@ -27,21 +27,21 @@ class SettingsViewController: UIViewController {
     private func setupUI() {
         view.backgroundColor = UIColor.systemGroupedBackground
 
-        // Title
+
         titleLabel.text = "Settings"
         titleLabel.font = UIFont.systemFont(ofSize: 24, weight: .bold)
         titleLabel.textColor = UIColor(red: 0.45, green: 0.3, blue: 0.85, alpha: 1.0)
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(titleLabel)
 
-        // Close button
+
         closeButton.setImage(UIImage(systemName: "xmark.circle.fill"), for: .normal)
         closeButton.tintColor = UIColor(red: 0.45, green: 0.3, blue: 0.85, alpha: 1.0)
         closeButton.addTarget(self, action: #selector(closeTapped), for: .touchUpInside)
         closeButton.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(closeButton)
 
-        // Table
+       
         tableView.delegate = self
         tableView.dataSource = self
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: "cell")
