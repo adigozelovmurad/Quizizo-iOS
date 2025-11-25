@@ -11,6 +11,8 @@ class APIManager {
     static let shared = APIManager()
     private init() {}
 
+    var lastAnswerText: String?
+
     private let baseURL = "https://api.quizizo.com/"
 
     private var token: String {
@@ -133,7 +135,7 @@ class APIManager {
                 return
             }
 
-            // ✅ Backend cavabını print et
+
             if let jsonString = String(data: data, encoding: .utf8) {
                 print("📦 ANSWER Response: \(jsonString)")
             }
@@ -145,7 +147,12 @@ class APIManager {
                     let dataObj = json["data"] as? [String: Any]
                     let isCorrect = dataObj?["isCorrect"] as? Bool ?? false
 
-                    // ✅ Backend correctIndex göndərirsə, onu al
+
+                    if let answerText = dataObj?["answer"] as? String {
+                        self.lastAnswerText = answerText
+                    }
+
+                   
                     let correctIndex = dataObj?["correctIndex"] as? Int
 
                     if let correctIndex = correctIndex {

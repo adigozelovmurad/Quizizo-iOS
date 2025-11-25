@@ -317,6 +317,11 @@ class QuizViewController: UIViewController {
             if self.countdown > 0 {
                 self.countdown -= 1
                 self.updateTimerLabel()
+
+
+                if self.countdown <= 59 {
+                    SoundManager.shared.playSound("tick")
+                }
             } else {
                 self.timer?.invalidate()
                 self.timeExpired()
@@ -374,7 +379,7 @@ class QuizViewController: UIViewController {
         if let qText = questionData["questionText"] as? String, qText != "<null>" {
             questionLabel.text = qText
         } else {
-            questionLabel.text = "Which of the following options is correct?"
+            questionLabel.text = ""
         }
 
         let type = questionData["type"] as? String ?? "MULTIPLE_CHOICE"
@@ -513,17 +518,17 @@ class QuizViewController: UIViewController {
             guard let self = self else { return }
 
             DispatchQueue.main.async {
-                // ✅ Backend correctIndex göndərdisə, onu MÜTLƏQ saxla
+
                 if let correctIndexFromBackend = correctIndexFromBackend {
                     self.correctAnswerIndex = correctIndexFromBackend
-                    print("✅ Backend-dən correctIndex alındı və saxlanıldı: \(correctIndexFromBackend)")
-                } else {
-                    print("⚠️ Backend correctIndex göndərmədi!")
+                    print("✅ Backend-dən correctIndex yeniləndi: \(correctIndexFromBackend)")
                 }
 
                 if isCorrect {
 
                     print("✅ Düzgün cavab!")
+                    SoundManager.shared.playSound("correct")
+
                     if let button = selectedButton {
                         button.backgroundColor = .systemGreen
                         button.setTitleColor(.white, for: .normal)
@@ -535,13 +540,36 @@ class QuizViewController: UIViewController {
                 } else {
 
                     print("❌ Səhv cavab!")
-                    print("💡 Düzgün cavab index: \(self.correctAnswerIndex)")
+                    print("💡 Düzgün cavab: index \(self.correctAnswerIndex)")
+                    SoundManager.shared.playSound("wrong")
+
+                    if self.correctAnswerIndex == -1 {
+                        if let backendAnswer = APIManager.shared.lastAnswerText?.lowercased() {
+                            for (i, btn) in self.optionButtons.enumerated() {
+                                if let title = btn.title(for: .normal)?.lowercased() {
+
+                                    let cleanTitle = title.replacingOccurrences(of: "a)", with: "")
+                                        .replacingOccurrences(of: "b)", with: "")
+                                        .replacingOccurrences(of: "c)", with: "")
+                                        .replacingOccurrences(of: "d)", with: "")
+                                        .replacingOccurrences(of: "e)", with: "")
+                                        .trimmingCharacters(in: .whitespaces)
+
+                                    if backendAnswer.contains(cleanTitle) || cleanTitle.contains(backendAnswer) {
+                                        self.correctAnswerIndex = i
+                                        print("🔍 Düzgün cavab mətndən tapıldı → index \(i)")
+                                        break
+                                    }
+                                }
+                            }
+                        }
+                    }
+
 
                     if let button = selectedButton {
                         button.backgroundColor = .systemRed
                         button.setTitleColor(.white, for: .normal)
                     }
-
 
                     self.showWrongAnswerModal()
                 }
@@ -566,7 +594,7 @@ class QuizViewController: UIViewController {
                     $0.layer.borderColor = UIColor(red: 0x7C/255.0, green: 0x5E/255.0, blue: 0xF1/255.0, alpha: 0.3).cgColor
                 }
 
-                
+
                 if self.correctAnswerIndex >= 0 && self.correctAnswerIndex < self.optionButtons.count {
                     let correctButton = self.optionButtons[self.correctAnswerIndex]
                     correctButton.backgroundColor = .systemGreen
