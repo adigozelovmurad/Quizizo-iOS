@@ -16,7 +16,7 @@ class SoundManager {
     private init() {
         
         do {
-            try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default)
+            try AVAudioSession.sharedInstance().setCategory(.ambient, mode: .default)
             try AVAudioSession.sharedInstance().setActive(true)
         } catch {
             print("❌ Audio session error: \(error)")

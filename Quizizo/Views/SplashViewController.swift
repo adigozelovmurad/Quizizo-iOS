@@ -17,14 +17,14 @@ class SplashViewController: UIViewController {
         setupOvals()
         setupLogo()
 
-        navigateToAuth()
+        
+        navigateToNext()
     }
 
     private func setupGradientBackground() {
         let gradientLayer = CAGradientLayer()
         gradientLayer.colors = [
-
-            UIColor(red: 0x7C/255.0, green: 0x5E/255.0, blue: 0xF1/255.0, alpha: 1.0).cgColor,  
+            UIColor(red: 0x7C/255.0, green: 0x5E/255.0, blue: 0xF1/255.0, alpha: 1.0).cgColor,
             UIColor(red: 0xE2/255.0, green: 0x7B/255.0, blue: 0xF5/255.0, alpha: 1.0).cgColor,
         ]
         gradientLayer.startPoint = CGPoint(x: 1.5, y: 0.25)
@@ -71,12 +71,40 @@ class SplashViewController: UIViewController {
         ])
     }
 
-    private func navigateToAuth() {
+    private func navigateToNext() {
+        print("🔍 Checking authentication...")
+
+
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-            let authVC = AuthViewController()
-            authVC.modalTransitionStyle = .crossDissolve
-            authVC.modalPresentationStyle = .fullScreen
-            self.present(authVC, animated: true, completion: nil)
+            let token = KeychainManager.read(key: "authToken")
+
+            if let token = token, !token.isEmpty {
+                print("✅ Token tapıldı: \(token.prefix(20))...")
+                print("🏠 Home-a yönləndirilir...")
+                self.setRoot(HomeViewController())
+            } else {
+                print("❌ Token yoxdur")
+                print("🔐 Auth-a yönləndirilir...")
+                self.setRoot(AuthViewController())
+            }
         }
+    }
+
+    private func setRoot(_ vc: UIViewController) {
+        guard let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+              let window = scene.windows.first else {
+            print("⚠️ Window tapılmadı!")
+            return
+        }
+
+        window.rootViewController = vc
+        window.makeKeyAndVisible()
+
+
+        UIView.transition(with: window,
+                          duration: 0.4,
+                          options: .transitionCrossDissolve,
+                          animations: nil,
+                          completion: nil)
     }
 }

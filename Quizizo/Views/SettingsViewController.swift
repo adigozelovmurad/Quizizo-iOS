@@ -13,10 +13,12 @@ class SettingsViewController: UIViewController {
     private let closeButton = UIButton()
     private let tableView = UITableView(frame: .zero, style: .insetGrouped)
 
+
     private var settings: [(title: String, isOn: Bool)] = [
         ("Notifications", true),
         ("Sound Effects", true),
         ("Dark Mode", false)
+
     ]
 
     override func viewDidLoad() {
@@ -41,7 +43,7 @@ class SettingsViewController: UIViewController {
         closeButton.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(closeButton)
 
-       
+
         tableView.delegate = self
         tableView.dataSource = self
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: "cell")
@@ -49,6 +51,7 @@ class SettingsViewController: UIViewController {
         tableView.backgroundColor = .clear
         view.addSubview(tableView)
 
+       
         NSLayoutConstraint.activate([
             closeButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 10),
             closeButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
@@ -68,7 +71,25 @@ class SettingsViewController: UIViewController {
     @objc private func closeTapped() {
         dismiss(animated: true)
     }
+
+
+    private func logout() {
+        print("🔐 Logging out...")
+
+
+        KeychainManager.delete(key: "authToken")
+
+
+        let authVC = AuthViewController()
+        authVC.modalPresentationStyle = .fullScreen
+
+        if let window = UIApplication.shared.windows.first {
+            window.rootViewController = authVC
+            window.makeKeyAndVisible()
+        }
+    }
 }
+
 
 extension SettingsViewController: UITableViewDelegate, UITableViewDataSource {
 
@@ -85,14 +106,32 @@ extension SettingsViewController: UITableViewDelegate, UITableViewDataSource {
         content.textProperties.font = UIFont.systemFont(ofSize: 18, weight: .medium)
         cell.contentConfiguration = content
 
-        let toggle = UISwitch()
-        toggle.isOn = setting.isOn
-        toggle.tag = indexPath.row
-        toggle.onTintColor = UIColor(red: 0.6, green: 0.45, blue: 0.95, alpha: 1.0)
-        toggle.addTarget(self, action: #selector(switchChanged(_:)), for: .valueChanged)
-        cell.accessoryView = toggle
+        if setting.title == "Log Out" {
+
+            cell.accessoryView = nil
+            cell.textLabel?.textColor = .systemRed
+        } else {
+
+            let toggle = UISwitch()
+            toggle.isOn = setting.isOn
+            toggle.tag = indexPath.row
+            toggle.onTintColor = UIColor(red: 0.6, green: 0.45, blue: 0.95, alpha: 1.0)
+            toggle.addTarget(self, action: #selector(switchChanged(_:)), for: .valueChanged)
+            cell.accessoryView = toggle
+        }
 
         return cell
+    }
+
+
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        let title = settings[indexPath.row].title
+
+        if title == "Log Out" {
+            logout()
+        }
+
+        tableView.deselectRow(at: indexPath, animated: true)
     }
 
     @objc private func switchChanged(_ sender: UISwitch) {
