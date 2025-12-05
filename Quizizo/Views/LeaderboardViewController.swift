@@ -4,12 +4,11 @@
 //
 //  Created by MURAD on 9.10.2025.
 //
-
 import UIKit
 
 class LeaderboardViewController: UIViewController {
 
-    
+
     private let segmentedControl = UISegmentedControl(items: ["Global", "Local"])
     private let tableView = UITableView()
     private let bottomNavView = UIView()
@@ -20,7 +19,7 @@ class LeaderboardViewController: UIViewController {
 
     private var leaderboardData: [LeaderboardEntry] = []
     private var currentPage = 1
-    private let pageLimit = 50
+    private let pageLimit = 400
 
     private let useDemoMode = false
 
@@ -291,7 +290,7 @@ class LeaderboardViewController: UIViewController {
     }
 }
 
-// MARK: - UITableViewDelegate & DataSource
+
 extension LeaderboardViewController: UITableViewDelegate, UITableViewDataSource {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return leaderboardData.count
@@ -300,19 +299,24 @@ extension LeaderboardViewController: UITableViewDelegate, UITableViewDataSource 
     private func fetchLocalLeaderboard() {
         activityIndicator.startAnimating()
 
-        APIManager.shared.fetchLeaderboard(page: 1, limit: 200) { [weak self] response in
+        APIManager.shared.fetchLeaderboard(page: 1, limit: pageLimit) { [weak self] response in
             DispatchQueue.main.async {
                 self?.activityIndicator.stopAnimating()
 
-                guard let leaders = response?.data.leaders else { return }
+                guard let response = response else {
+                    print("⚠️ API failed for local leaderboard")
+                    return
+                }
 
-                // Yalnız Azərbaycan
+                let leaders = response.data.leaders
+
+                
                 let filtered = leaders.filter { $0.country == "AZ" }
 
                 self?.leaderboardData = filtered
                 self?.tableView.reloadData()
 
-                print("🇦🇿 LOCAL leaderboard loaded: \(filtered.count) AZ users")
+                print("🇦🇿 LOCAL leaderboard loaded: \(filtered.count) Azərbaycan istifadəçisi")
             }
         }
     }
@@ -347,7 +351,7 @@ class LeaderboardCell: UITableViewCell {
     private let avatarImageView = UIImageView()
     private let nameLabel = UILabel()
     private let pointsLabel = UILabel()
-    private let flagImageView = UIImageView()
+    private let flagLabel = UILabel()
     private let medalImageView = UIImageView()
 
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
@@ -370,9 +374,8 @@ class LeaderboardCell: UITableViewCell {
 
         rankImageView.contentMode = .scaleAspectFit
         rankImageView.translatesAutoresizingMaskIntoConstraints = false
-        rankImageView.tintColor = UIColor(red: 0.0, green: 0.0, blue: 0.0, alpha: 0.2)
 
-        avatarImageView.layer.cornerRadius = 22
+        avatarImageView.layer.cornerRadius = 24
         avatarImageView.clipsToBounds = true
         avatarImageView.backgroundColor = UIColor(red: 0.85, green: 0.75, blue: 0.95, alpha: 1.0)
         avatarImageView.translatesAutoresizingMaskIntoConstraints = false
@@ -385,17 +388,19 @@ class LeaderboardCell: UITableViewCell {
         pointsLabel.textColor = UIColor(red: 0.5, green: 0.5, blue: 0.6, alpha: 1.0)
         pointsLabel.translatesAutoresizingMaskIntoConstraints = false
 
-        flagImageView.contentMode = .scaleAspectFit
-        flagImageView.translatesAutoresizingMaskIntoConstraints = false
-        flagImageView.layer.cornerRadius = 0
-        flagImageView.clipsToBounds = true
+        flagLabel.font = UIFont.systemFont(ofSize: 18)
+        flagLabel.translatesAutoresizingMaskIntoConstraints = false
+        flagLabel.layer.cornerRadius = 10
+        flagLabel.clipsToBounds = true
+        flagLabel.backgroundColor = .white
+        flagLabel.textAlignment = .center
 
         medalImageView.contentMode = .scaleAspectFit
         medalImageView.translatesAutoresizingMaskIntoConstraints = false
 
         containerView.addSubview(rankImageView)
         containerView.addSubview(avatarImageView)
-        containerView.addSubview(flagImageView)
+        containerView.addSubview(flagLabel)
         containerView.addSubview(nameLabel)
         containerView.addSubview(pointsLabel)
         containerView.addSubview(medalImageView)
@@ -413,14 +418,14 @@ class LeaderboardCell: UITableViewCell {
             rankImageView.heightAnchor.constraint(equalToConstant: 24),
 
             avatarImageView.leadingAnchor.constraint(equalTo: rankImageView.trailingAnchor, constant: 12),
-            avatarImageView.topAnchor.constraint(equalTo: containerView.topAnchor, constant: 12),
+            avatarImageView.centerYAnchor.constraint(equalTo: containerView.centerYAnchor),
             avatarImageView.widthAnchor.constraint(equalToConstant: 48),
             avatarImageView.heightAnchor.constraint(equalToConstant: 48),
 
-            flagImageView.trailingAnchor.constraint(equalTo: avatarImageView.trailingAnchor, constant: 2),
-            flagImageView.bottomAnchor.constraint(equalTo: avatarImageView.bottomAnchor, constant: 2),
-            flagImageView.widthAnchor.constraint(equalToConstant: 20),
-            flagImageView.heightAnchor.constraint(equalToConstant: 20),
+            flagLabel.trailingAnchor.constraint(equalTo: avatarImageView.trailingAnchor, constant: 2),
+            flagLabel.bottomAnchor.constraint(equalTo: avatarImageView.bottomAnchor, constant: 2),
+            flagLabel.widthAnchor.constraint(equalToConstant: 20),
+            flagLabel.heightAnchor.constraint(equalToConstant: 20),
 
             nameLabel.leadingAnchor.constraint(equalTo: avatarImageView.trailingAnchor, constant: 12),
             nameLabel.topAnchor.constraint(equalTo: containerView.topAnchor, constant: 18),
@@ -436,23 +441,15 @@ class LeaderboardCell: UITableViewCell {
     }
 
     func configure(rank: Int, name: String, points: String, flag: String, isTopRank: Bool, profileImage: String?) {
-        let config = UIImage.SymbolConfiguration(pointSize: 20, weight: .medium)
-        rankImageView.image = UIImage(systemName: "\(rank).circle", withConfiguration: config)
+
+
+        rankImageView.image = createRankImage(rank: rank)
 
         nameLabel.text = name
         pointsLabel.text = "\(points) points"
 
-        let flagLabel = UILabel()
+
         flagLabel.text = flag
-        flagLabel.font = UIFont.systemFont(ofSize: 16)
-        flagLabel.sizeToFit()
-
-        UIGraphicsBeginImageContextWithOptions(flagLabel.bounds.size, false, 0)
-        flagLabel.layer.render(in: UIGraphicsGetCurrentContext()!)
-        let flagImage = UIGraphicsGetImageFromCurrentImageContext()
-        UIGraphicsEndImageContext()
-
-        flagImageView.image = flagImage
 
         if isTopRank {
             if rank == 1 {
@@ -474,6 +471,40 @@ class LeaderboardCell: UITableViewCell {
         }
     }
 
+
+    private func createRankImage(rank: Int) -> UIImage {
+        let size = CGSize(width: 24, height: 24)
+
+        let renderer = UIGraphicsImageRenderer(size: size)
+        let image = renderer.image { context in
+
+            let circlePath = UIBezierPath(ovalIn: CGRect(origin: .zero, size: size))
+            UIColor(red: 0.0, green: 0.0, blue: 0.0, alpha: 0.1).setFill()
+            circlePath.fill()
+
+
+            let fontSize: CGFloat = rank < 100 ? 10 : 8
+
+
+            let attributes: [NSAttributedString.Key: Any] = [
+                .font: UIFont.systemFont(ofSize: fontSize, weight: .semibold),
+                .foregroundColor: UIColor(red: 0.0, green: 0.0, blue: 0.0, alpha: 0.5)
+            ]
+
+            let text = "\(rank)" as NSString
+            let textSize = text.size(withAttributes: attributes)
+            let textRect = CGRect(
+                x: (size.width - textSize.width) / 2,
+                y: (size.height - textSize.height) / 2,
+                width: textSize.width,
+                height: textSize.height
+            )
+            text.draw(in: textRect, withAttributes: attributes)
+        }
+
+        return image
+    }
+
     private func loadImage(from url: URL) {
         URLSession.shared.dataTask(with: url) { [weak self] data, response, error in
             guard let data = data, let image = UIImage(data: data) else { return }
@@ -484,40 +515,37 @@ class LeaderboardCell: UITableViewCell {
     }
 
     private func createAvatarImage(name: String) -> UIImage {
-        let size = CGSize(width: 44, height: 44)
+        let size = CGSize(width: 48, height: 48)
         let initials = String(name.prefix(2)).uppercased()
 
-        UIGraphicsBeginImageContextWithOptions(size, false, 0)
-        let context = UIGraphicsGetCurrentContext()
+        let renderer = UIGraphicsImageRenderer(size: size)
+        let image = renderer.image { context in
+            let colors: [UIColor] = [
+                UIColor(red: 0.85, green: 0.75, blue: 0.95, alpha: 1.0),
+                UIColor(red: 0.95, green: 0.75, blue: 0.85, alpha: 1.0),
+                UIColor(red: 0.75, green: 0.85, blue: 0.95, alpha: 1.0)
+            ]
+            let randomColor = colors.randomElement() ?? colors[0]
 
-        let colors: [UIColor] = [
-            UIColor(red: 0.85, green: 0.75, blue: 0.95, alpha: 1.0),
-            UIColor(red: 0.95, green: 0.75, blue: 0.85, alpha: 1.0),
-            UIColor(red: 0.75, green: 0.85, blue: 0.95, alpha: 1.0)
-        ]
-        let randomColor = colors.randomElement() ?? colors[0]
+            context.cgContext.setFillColor(randomColor.cgColor)
+            context.cgContext.fill(CGRect(origin: .zero, size: size))
 
-        context?.setFillColor(randomColor.cgColor)
-        context?.fill(CGRect(origin: .zero, size: size))
+            let attributes: [NSAttributedString.Key: Any] = [
+                .font: UIFont.systemFont(ofSize: 18, weight: .bold),
+                .foregroundColor: UIColor.white
+            ]
 
-        let attributes: [NSAttributedString.Key: Any] = [
-            .font: UIFont.systemFont(ofSize: 16, weight: .bold),
-            .foregroundColor: UIColor.white
-        ]
+            let text = initials as NSString
+            let textSize = text.size(withAttributes: attributes)
+            let textRect = CGRect(
+                x: (size.width - textSize.width) / 2,
+                y: (size.height - textSize.height) / 2,
+                width: textSize.width,
+                height: textSize.height
+            )
+            text.draw(in: textRect, withAttributes: attributes)
+        }
 
-        let text = initials as NSString
-        let textSize = text.size(withAttributes: attributes)
-        let textRect = CGRect(
-            x: (size.width - textSize.width) / 2,
-            y: (size.height - textSize.height) / 2,
-            width: textSize.width,
-            height: textSize.height
-        )
-        text.draw(in: textRect, withAttributes: attributes)
-
-        let image = UIGraphicsGetImageFromCurrentImageContext()
-        UIGraphicsEndImageContext()
-
-        return image ?? UIImage()
+        return image
     }
 }
